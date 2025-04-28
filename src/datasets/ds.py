@@ -36,7 +36,7 @@ class VisDrone(torch.utils.data.Dataset):
           height = float(parts[3])
           class_id = int(parts[5])
           
-          if class_id == 0:
+          if class_id == 0 or class_id == 11:
             continue
           class_id -= 1
 

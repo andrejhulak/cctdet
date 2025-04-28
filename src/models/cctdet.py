@@ -21,7 +21,7 @@ class CCTdeT(torch.nn.Module):
     max_size=1333
     image_mean = [0.485, 0.456, 0.406]
     image_std = [0.229, 0.224, 0.225]
-    self.transform = GeneralizedRCNNTransform(min_size, max_size, image_mean, image_std, **kwargs)
+    self.transform = GeneralizedRCNNTransform(min_size, max_size, image_mean, image_std)
  
     # output channels in a backbone, for mobilenet_v2, it's 1280
     self.backbone = torchvision.models.mobilenet_v2(weights=MobileNet_V2_Weights.DEFAULT).features
@@ -60,7 +60,7 @@ class CCTdeT(torch.nn.Module):
               kernel_size=3, stride=1, padding=1,
               pooling_kernel_size=2, pooling_stride=2,
               pooling_padding=0,
-              num_layers=4, num_heads=4, mlp_ratio=2.0,
+              num_layers=2, num_heads=2, mlp_ratio=3.0,
               num_classes=num_classes,
               positional_embedding='learnable')
 
@@ -79,6 +79,7 @@ class CCTdeT(torch.nn.Module):
   def forward(self, images, targets=None):
     images, targets = self.transform(images, targets)
     images = images.to(device)
+
     features = self.backbone(images.tensors)
 
     if isinstance(features, torch.Tensor):
@@ -86,4 +87,11 @@ class CCTdeT(torch.nn.Module):
 
     proposals, proposal_losses = self.rpn(images, features, targets)
     detections, detector_losses = self.roi_heads(features, proposals, images.image_sizes, targets)
-    return detections
+
+    if self.training:
+      losses = {}
+      losses.update(proposal_losses)
+      losses.update(detector_losses)
+      return losses
+    else:
+      return detections

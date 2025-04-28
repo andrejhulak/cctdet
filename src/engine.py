@@ -4,8 +4,40 @@ from utils.misc import class_names
 import torchvision.transforms.functional as F
 import cv2
 import numpy as np
+from tqdm import tqdm
+import os
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+def train(model, dataloader, optimizer, epoch, save_dir="model_weights/cctdet/weights"):
+  model.train()
+  total_loss = 0.0
+  num_batches = len(dataloader)
+  progress_bar = tqdm(dataloader, desc=f"Epoch {epoch}", unit="batch")
+
+  if not os.path.exists(save_dir):
+    os.makedirs(save_dir)
+
+  for images, targets in progress_bar:
+    images = [img.to(device) for img in images]
+    targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
+
+    losses = model(images, targets)
+    loss = sum(l for l in losses.values())
+
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+
+    total_loss += loss.item()
+    loss_dict_str = ", ".join(f"{k}: {v.item():.4f}" for k, v in losses.items())
+    progress_bar.set_postfix({"loss": f"{loss.item():.4f}", **{k: f"{v.item():.4f}" for k, v in losses.items()}})
+
+  save_path = os.path.join(save_dir, f"model_epoch_{epoch}.pth")
+  torch.save(model.state_dict(), save_path)
+  print(f"Saved model parameters to: {save_path}")
+
+  return total_loss / num_batches
 
 @torch.no_grad()
 def evaluate(model, dataloader):

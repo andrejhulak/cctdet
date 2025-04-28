@@ -1,24 +1,35 @@
+import torch
+from torch.optim import AdamW
 from datasets.ds import VisDrone
 from torch.utils.data import DataLoader
-import torch
-from models.dummy import DummyRandom
+from utils.misc import collate_fn_simple
 from models.cctdet import CCTdeT
-from utils.misc import collate_fn_simple, format_metrics
-from engine import evaluate, visualize_image
-from torchsummary import summary
+from engine import evaluate, train
+from utils.misc import format_metrics
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
+BATCH_SIZE = 2
 
 if __name__ == "__main__":
-  root = "data/VisDrone/VisDrone2019-DET-val"
-  ds = VisDrone(root=root)
-  dl = DataLoader(dataset=ds,
-                  batch_size=4,
-                  shuffle=True,
-                  collate_fn=collate_fn_simple)
-  
-  model_cct = CCTdeT().to(device)
-  model_cct.eval()
+  # train_root = "data/VisDrone/VisDrone2019-DET-train"
+  # train_ds = VisDrone(root=train_root)
+  # train_dl = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True,
+  #                       collate_fn=collate_fn_simple, drop_last=True)
 
-  metrics = evaluate(model_cct, dl)
+  model = CCTdeT().to(device)
+  checkpoint = torch.load("model_weights/cctdet/weights/model_epoch_1.pth")
+  model.load_state_dict(checkpoint)
+  
+  # optimizer = AdamW(model.parameters(), lr=1e-6, weight_decay=0.0005)
+
+  # epochs = 20
+  # for epoch in range(1, epochs+1):
+  #   avg_loss = train(model, train_dl, optimizer, epoch)
+  #   print(f"Epoch {epoch}/{epochs}  loss: {avg_loss:.4f}")
+
+  val_root = "data/VisDrone/VisDrone2019-DET-val"
+  val_ds = VisDrone(root=val_root)
+  val_dl = DataLoader(val_ds, batch_size=BATCH_SIZE, shuffle=False,
+                      collate_fn=collate_fn_simple)
+  metrics = evaluate(model, val_dl)
   print(format_metrics(metrics))
