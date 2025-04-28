@@ -5,6 +5,7 @@ from models.dummy import DummyRandom
 from models.cctdet import CCTdeT
 from utils.misc import collate_fn_simple, format_metrics
 from engine import evaluate, visualize_image
+from torchsummary import summary
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -16,10 +17,11 @@ if __name__ == "__main__":
                   shuffle=True,
                   collate_fn=collate_fn_simple)
   
-  model_dummy = DummyRandom()
-  model_cct = CCTdeT()
-  # result = evaluate(model, dl)
-  # print(format_metrics(result))
+  model_cct = CCTdeT().to(device)
+  model_cct.eval()
+  summary(model_cct, input_size=(3, 765, 1360))
+
   for images, targets in dl:
-    print(model_cct(images).shape)
+    output = model_cct(images)
+    print(*(t.shape for t in output))
     break
