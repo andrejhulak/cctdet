@@ -19,9 +19,6 @@ if __name__ == "__main__":
   
   model_cct = CCTdeT().to(device)
   model_cct.eval()
-  summary(model_cct, input_size=(3, 765, 1360))
 
-  for images, targets in dl:
-    output = model_cct(images)
-    print(*(t.shape for t in output))
-    break
+  metrics = evaluate(model_cct, dl)
+  print(format_metrics(metrics))

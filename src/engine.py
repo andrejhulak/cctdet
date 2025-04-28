@@ -25,6 +25,7 @@ def evaluate(model, dataloader):
   ret = metric.compute()
   return ret
 
+# don't think this works
 @torch.no_grad()
 def visualize_image(model, image, class_names=class_names, min_score_thresh=0.5):
   model.eval()

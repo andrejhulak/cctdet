@@ -1,10 +1,17 @@
 import torch
 import torchvision
 from collections import OrderedDict
-from torchvision.models.detection.faster_rcnn import RegionProposalNetwork, RPNHead
-from torchvision.models.detection.faster_rcnn import _default_anchorgen, AnchorGenerator
+from torchvision.models.detection.faster_rcnn import RegionProposalNetwork, RPNHead, AnchorGenerator
 from torchvision.models import MobileNet_V2_Weights
 from torchvision.models.detection.transform import GeneralizedRCNNTransform
+from vit_pytorch.cct import CCT
+from utils.misc import class_names
+from torchvision.models.detection.roi_heads import RoIHeads
+from torchvision.ops import MultiScaleRoIAlign
+from models.cctpredictor import CCTPredictor
+
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+num_classes = len(class_names)
 
 class CCTdeT(torch.nn.Module):
   def __init__(self, *args, **kwargs):
@@ -36,25 +43,47 @@ class CCTdeT(torch.nn.Module):
     rpn_post_nms_top_n = dict(training=rpn_post_nms_top_n_train, testing=rpn_post_nms_top_n_test)
 
     self.rpn = RegionProposalNetwork(anchor_generator=rpn_anchor_generator,
-                                     head=rpn_head,
-                                     fg_iou_thresh=0.7,
-                                     bg_iou_thresh=0.3,
-                                     batch_size_per_image=256,
-                                     positive_fraction=0.5,
-                                     pre_nms_top_n=rpn_pre_nms_top_n,
-                                     post_nms_top_n=rpn_post_nms_top_n,
-                                     nms_thresh=0.7,
-                                     score_thresh=0.0)
+                                    head=rpn_head,
+                                    fg_iou_thresh=0.7,
+                                    bg_iou_thresh=0.3,
+                                    batch_size_per_image=256,
+                                    positive_fraction=0.5,
+                                    pre_nms_top_n=rpn_pre_nms_top_n,
+                                    post_nms_top_n=rpn_post_nms_top_n,
+                                    nms_thresh=0.7,
+                                    score_thresh=0.0)
 
-  def forward(self, images):
-    images, targets = self.transform(images, None)
+    cct = CCT(img_size=(7,7),
+              embedding_dim=256,
+              n_input_channels=out_channels,
+              n_conv_layers=2,
+              kernel_size=3, stride=1, padding=1,
+              pooling_kernel_size=2, pooling_stride=2,
+              pooling_padding=0,
+              num_layers=4, num_heads=4, mlp_ratio=2.0,
+              num_classes=num_classes,
+              positional_embedding='learnable')
+
+    box_roi_pool = MultiScaleRoIAlign(featmap_names=['0'], output_size=7, sampling_ratio=2)
+
+    predictor = CCTPredictor(cct, embed_dim=256, num_classes=num_classes)
+
+    self.roi_heads = RoIHeads(box_roi_pool=box_roi_pool,
+                              box_head=torch.nn.Identity(),
+                              box_predictor=predictor,
+                              fg_iou_thresh=0.5, bg_iou_thresh=0.5,
+                              batch_size_per_image=512, positive_fraction=0.25,
+                              bbox_reg_weights=None,
+                              score_thresh=0.05, nms_thresh=0.5, detections_per_img=100)
+
+  def forward(self, images, targets=None):
+    images, targets = self.transform(images, targets)
+    images = images.to(device)
     features = self.backbone(images.tensors)
-
-    features = self.backbone(images)
-    targets = None
 
     if isinstance(features, torch.Tensor):
       features = OrderedDict([("0", features)])
 
     proposals, proposal_losses = self.rpn(images, features, targets)
-    return proposals
+    detections, detector_losses = self.roi_heads(features, proposals, images.image_sizes, targets)
+    return detections
