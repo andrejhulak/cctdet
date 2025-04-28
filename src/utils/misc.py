@@ -13,27 +13,6 @@ class_names = {
   9: 'motor'
 }
 
-def collate_fn(batch):
-  # ret = {}
-  imgs = [t[0] for t in batch] 
-  # labels = [t[1] for t in batch]
-
-  # for item in labels:
-  #   print(item['boxes'].shape)
-  #   print(item['labels'].shape)
-
-  lengths_imgs = torch.tensor([t.shape[0] for t in imgs])
-  batch_imgs = ([t for t in imgs])
-  mask_imgs = (batch_imgs != 0)
-  # ret['imgs'] = batch_imgs, lengths_imgs, mask_imgs
-
-  # lengths_labels = torch.tensor([t.shape[0] for t in labels])
-  # batch_labels = pad_sequence([t for t in labels])
-  # mask_labels = (batch_labels != 0)
-  # ret['labels'] = batch_labels, lengths_labels, mask_labels
-
-  return batch_imgs, lengths_imgs, mask_imgs
-
 def collate_fn_simple(batch):
   images = []
   targets = []
