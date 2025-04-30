@@ -2,13 +2,16 @@ import torch
 import torchvision
 from collections import OrderedDict
 from torchvision.models.detection.faster_rcnn import RegionProposalNetwork, RPNHead, AnchorGenerator
-from torchvision.models import MobileNet_V2_Weights
+from torchvision.models import resnet50, ResNet50_Weights
+from torchvision.models import mobilenet_v2, MobileNet_V2_Weights
 from torchvision.models.detection.transform import GeneralizedRCNNTransform
 from vit_pytorch.cct import CCT
 from utils.misc import class_names
 from torchvision.models.detection.roi_heads import RoIHeads
 from torchvision.ops import MultiScaleRoIAlign
 from models.cctpredictor import CCTPredictor
+from typing import Dict, List, Optional, Tuple, Union
+from torchvision.models.detection.faster_rcnn import TwoMLPHead
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 num_classes = len(class_names)
@@ -23,18 +26,21 @@ class CCTdeT(torch.nn.Module):
     image_std = [0.229, 0.224, 0.225]
     self.transform = GeneralizedRCNNTransform(min_size, max_size, image_mean, image_std)
  
-    # output channels in a backbone, for mobilenet_v2, it's 1280
+    # backbone = resnet50(weights=ResNet50_Weights.DEFAULT)
+    # self.backbone = torch.nn.Sequential(*list(backbone.children())[:-2])
+    # out_channels = 2048
+
     self.backbone = torchvision.models.mobilenet_v2(weights=MobileNet_V2_Weights.DEFAULT).features
     out_channels = 1280
 
-    rpn_pre_nms_top_n_train=2000
-    rpn_pre_nms_top_n_test=1000
-    rpn_post_nms_top_n_train=2000
-    rpn_post_nms_top_n_test=1000
+    rpn_pre_nms_top_n_train=200
+    rpn_pre_nms_top_n_test=100
+    rpn_post_nms_top_n_train=200
+    rpn_post_nms_top_n_test=100
 
     rpn_anchor_generator = AnchorGenerator(
       sizes=((32, 64, 128, 256, 512),),
-      aspect_ratios=((0.5, 1.0, 2.0),)
+      aspect_ratios=((1.0, 1.5, 2.0),)
     )
 
     rpn_head = RPNHead(out_channels, rpn_anchor_generator.num_anchors_per_location()[0])
@@ -50,33 +56,61 @@ class CCTdeT(torch.nn.Module):
                                     positive_fraction=0.5,
                                     pre_nms_top_n=rpn_pre_nms_top_n,
                                     post_nms_top_n=rpn_post_nms_top_n,
-                                    nms_thresh=0.7,
+                                    nms_thresh=0.5,
                                     score_thresh=0.0)
 
-    cct = CCT(img_size=(7,7),
-              embedding_dim=256,
+    box_output_size = 16
+    box_roi_pool = MultiScaleRoIAlign(featmap_names=['0'], output_size=box_output_size, sampling_ratio=2)
+
+    cct = CCT(img_size=(box_output_size,box_output_size),
+              embedding_dim=128,
               n_input_channels=out_channels,
               n_conv_layers=2,
               kernel_size=3, stride=1, padding=1,
               pooling_kernel_size=2, pooling_stride=2,
               pooling_padding=0,
-              num_layers=2, num_heads=2, mlp_ratio=3.0,
+              num_layers=2, num_heads=2, mlp_ratio=2.0,
               num_classes=num_classes,
               positional_embedding='learnable')
 
-    box_roi_pool = MultiScaleRoIAlign(featmap_names=['0'], output_size=7, sampling_ratio=2)
+    resolution = box_roi_pool.output_size[0]
+    representation_size = 128
+    box_head = TwoMLPHead(out_channels * resolution**2, representation_size)
 
-    predictor = CCTPredictor(cct, embed_dim=256, num_classes=num_classes)
+    predictor = CCTPredictor(cct, embed_dim=128, num_classes=num_classes)
 
     self.roi_heads = RoIHeads(box_roi_pool=box_roi_pool,
                               box_head=torch.nn.Identity(),
                               box_predictor=predictor,
                               fg_iou_thresh=0.5, bg_iou_thresh=0.5,
-                              batch_size_per_image=512, positive_fraction=0.25,
+                              batch_size_per_image=32, positive_fraction=0.25,
                               bbox_reg_weights=None,
-                              score_thresh=0.05, nms_thresh=0.5, detections_per_img=100)
+                              score_thresh=0.05, nms_thresh=0.5, detections_per_img=200)
 
   def forward(self, images, targets=None):
+    if self.training:
+      if targets is None:
+        torch._assert(False, "targets should not be none when in training mode")
+      else:
+        for target in targets:
+          boxes = target["boxes"]
+          if isinstance(boxes, torch.Tensor):
+            torch._assert(
+              len(boxes.shape) == 2 and boxes.shape[-1] == 4,
+              f"Expected target boxes to be a tensor of shape [N, 4], got {boxes.shape}.",
+            )
+          else:
+            torch._assert(False, f"Expected target boxes to be of type Tensor, got {type(boxes)}.")
+
+    original_image_sizes: List[Tuple[int, int]] = []
+    for img in images:
+      val = img.shape[-2:]
+      torch._assert(
+        len(val) == 2,
+        f"expecting the last two dimensions of the Tensor to be H and W instead got {img.shape[-2:]}",
+      )
+      original_image_sizes.append((val[0], val[1]))
+
     images, targets = self.transform(images, targets)
     images = images.to(device)
 
@@ -87,11 +121,13 @@ class CCTdeT(torch.nn.Module):
 
     proposals, proposal_losses = self.rpn(images, features, targets)
     detections, detector_losses = self.roi_heads(features, proposals, images.image_sizes, targets)
+    detections = self.transform.postprocess(detections, images.image_sizes, original_image_sizes)
+
+    losses = {}
+    losses.update(detector_losses)
+    losses.update(proposal_losses)
 
     if self.training:
-      losses = {}
-      losses.update(proposal_losses)
-      losses.update(detector_losses)
       return losses
     else:
       return detections
