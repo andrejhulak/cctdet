@@ -12,55 +12,152 @@ from torchvision.ops import boxes as box_ops, roi_align
 from torchvision.models.detection import _utils as det_utils
 
 from torchvision.ops.focal_loss import sigmoid_focal_loss
+from torchvision.ops.ciou_loss import complete_box_iou_loss
 
-def fastrcnn_loss(class_logits, box_regression, labels, regression_targets):
-    # type: (Tensor, Tensor, List[Tensor], List[Tensor]) -> Tuple[Tensor, Tensor]
+def decode_boxes(deltas: torch.Tensor, anchors: torch.Tensor) -> torch.Tensor:
     """
-    Computes the loss for Faster R-CNN.
+    Decode deltas (tx, ty, tw, th) to box coordinates [x1, y1, x2, y2] based on anchors.
+    deltas: (M, 4), anchors: (M, 4)
+    """
+    widths  = anchors[:, 2] - anchors[:, 0]
+    heights = anchors[:, 3] - anchors[:, 1]
+    ctr_x   = anchors[:, 0] + 0.5 * widths
+    ctr_y   = anchors[:, 1] + 0.5 * heights
+
+    dx = deltas[:, 0]
+    dy = deltas[:, 1]
+    dw = deltas[:, 2]
+    dh = deltas[:, 3]
+
+    pred_ctr_x = dx * widths + ctr_x
+    pred_ctr_y = dy * heights + ctr_y
+    pred_w = torch.exp(dw) * widths
+    pred_h = torch.exp(dh) * heights
+
+    pred_boxes = torch.zeros_like(deltas)
+    pred_boxes[:, 0] = pred_ctr_x - 0.5 * pred_w  # x1
+    pred_boxes[:, 1] = pred_ctr_y - 0.5 * pred_h  # y1
+    pred_boxes[:, 2] = pred_ctr_x + 0.5 * pred_w  # x2
+    pred_boxes[:, 3] = pred_ctr_y + 0.5 * pred_h  # y2
+
+    return pred_boxes
+
+# def fastrcnn_loss(class_logits, box_regression, labels, regression_targets, proposals, box_coder):
+#     """
+#     Computes the loss for Faster R-CNN.
+
+#     Args:
+#         class_logits (Tensor)
+#         box_regression (Tensor)
+#         labels (list[BoxList])
+#         regression_targets (Tensor)
+
+#     Returns:
+#         classification_loss (Tensor)
+#         box_loss (Tensor)
+#     """
+
+#     labels = torch.cat(labels, dim=0)
+#     regression_targets = torch.cat(regression_targets, dim=0)
+
+    
+#     N, num_classes = class_logits.shape
+#     targets_one_hot = F.one_hot(labels, num_classes).to(class_logits.dtype)
+
+#     classification_loss = sigmoid_focal_loss(
+#         class_logits,
+#         targets_one_hot,
+#         alpha=0.25,
+#         gamma=2,
+#         reduction="mean",
+#     )
+
+#     box_regression = box_coder.decode(box_regression, proposals)
+#     regression_targets = box_coder.decode(regression_targets, proposals)
+
+#     # get indices that correspond to the regression targets for
+#     # the corresponding ground truth labels, to be used with
+#     # advanced indexing
+#     sampled_pos_inds_subset = torch.where(labels > 0)[0]
+#     labels_pos = labels[sampled_pos_inds_subset]
+#     box_regression = box_regression.reshape(N, box_regression.size(-1) // 4, 4)
+
+#     # box_loss = F.smooth_l1_loss(
+#     #     box_regression[sampled_pos_inds_subset, labels_pos],
+#     #     regression_targets[sampled_pos_inds_subset],
+#     #     beta=1 / 9,
+#     #     reduction="sum",
+#     # )
+#     # box_loss = box_loss / labels.numel()
+
+#     box_loss = complete_box_iou_loss(
+#         boxes1=box_regression[sampled_pos_inds_subset, labels_pos],
+#         boxes2=regression_targets[sampled_pos_inds_subset],
+#         reduction='sum',
+#         eps=1e-3
+#     )
+#     # print(box_loss)
+
+#     return classification_loss, box_loss
+
+def fastrcnn_loss(
+    class_logits: torch.Tensor,
+    box_regression: torch.Tensor,
+    labels: list[torch.Tensor],
+    regression_targets: list[torch.Tensor],
+    proposals: list[torch.Tensor]
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """
+    Computes the loss for Faster R-CNN with CIoU in the ROI head.
 
     Args:
-        class_logits (Tensor)
-        box_regression (Tensor)
-        labels (list[BoxList])
-        regression_targets (Tensor)
+        class_logits: (N, num_classes)
+        box_regression: raw deltas (N, num_classes*4)
+        labels: list of (num_proposals_i,) label tensors
+        regression_targets: list of (num_proposals_i, 4) delta targets
+        proposals: list of (num_proposals_i, 4) anchor boxes
 
     Returns:
-        classification_loss (Tensor)
-        box_loss (Tensor)
+        classification_loss, box_loss
     """
-
+    # concatenate
     labels = torch.cat(labels, dim=0)
-    regression_targets = torch.cat(regression_targets, dim=0)
+    reg_targets = torch.cat(regression_targets, dim=0)
+    anchors = torch.cat(proposals, dim=0)
 
-    num_classes = class_logits.size(1)
-    targets_one_hot = F.one_hot(labels, num_classes).to(class_logits.dtype)
-
-    classification_loss = sigmoid_focal_loss(
-        class_logits,
-        targets_one_hot,
-        alpha=0.25,
-        gamma=2,
-        reduction="mean",
-    )
-
-    # get indices that correspond to the regression targets for
-    # the corresponding ground truth labels, to be used with
-    # advanced indexing
-    sampled_pos_inds_subset = torch.where(labels > 0)[0]
-    labels_pos = labels[sampled_pos_inds_subset]
+    # classification loss
     N, num_classes = class_logits.shape
-    box_regression = box_regression.reshape(N, box_regression.size(-1) // 4, 4)
-
-    box_loss = F.smooth_l1_loss(
-        box_regression[sampled_pos_inds_subset, labels_pos],
-        regression_targets[sampled_pos_inds_subset],
-        beta=1 / 9,
-        reduction="sum",
+    targets_one_hot = F.one_hot(labels, num_classes).to(class_logits.dtype)
+    classification_loss = sigmoid_focal_loss(
+        class_logits, targets_one_hot, alpha=0.25, gamma=2, reduction="mean"
     )
+
+    # reshape for class-wise deltas
+    deltas = box_regression.view(N, num_classes, 4)
+
+    # select positives
+    pos_inds = torch.where(labels > 0)[0]
+    if pos_inds.numel() == 0:
+        return classification_loss, torch.tensor(0.0, device=class_logits.device)
+
+    labels_pos = labels[pos_inds]
+    # gather deltas for each positive sample
+    pred_deltas = deltas[pos_inds, labels_pos]
+    # corresponding anchors
+    pos_anchors = anchors[pos_inds]
+
+    # decode predicted and target boxes
+    pred_boxes = decode_boxes(pred_deltas, pos_anchors)
+    target_boxes = decode_boxes(reg_targets[pos_inds], pos_anchors)
+
+    # CIoU loss
+    box_loss = complete_box_iou_loss(
+        boxes1=pred_boxes, boxes2=target_boxes, reduction='sum', eps=1e-7
+    )
+    # normalize
     box_loss = box_loss / labels.numel()
 
     return classification_loss, box_loss
-
 
 def maskrcnn_inference(x, labels):
     # type: (Tensor, List[Tensor]) -> List[Tensor]
@@ -708,9 +805,9 @@ class RoIHeads(nn.Module):
             labels = labels.view(1, -1).expand_as(scores)
 
             # remove predictions with the background label
-            boxes = boxes[:, 1:]
-            scores = scores[:, 1:]
-            labels = labels[:, 1:]
+            # boxes = boxes[:, 1:]
+            # scores = scores[:, 1:]
+            # labels = labels[:, 1:]
 
             # batch everything, by making every class prediction be a separate instance
             boxes = boxes.reshape(-1, 4)
@@ -782,7 +879,7 @@ class RoIHeads(nn.Module):
                 raise ValueError("labels cannot be None")
             if regression_targets is None:
                 raise ValueError("regression_targets cannot be None")
-            loss_classifier, loss_box_reg = fastrcnn_loss(class_logits, box_regression, labels, regression_targets)
+            loss_classifier, loss_box_reg = fastrcnn_loss(class_logits, box_regression, labels, regression_targets, proposals)
             losses = {"loss_classifier": loss_classifier, "loss_box_reg": loss_box_reg}
         else:
             boxes, scores, labels = self.postprocess_detections(class_logits, box_regression, proposals, image_shapes)

@@ -9,7 +9,7 @@ import os
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-def train(model, dataloader, optimizer, epoch, save_dir="model_weights/ssdlite/weights"):
+def train(model, dataloader, optimizer, epoch, save_dir="model_weights/cctdetnew/weights_0"):
   model.train()
   total_loss = 0.0
   total_losses = {}

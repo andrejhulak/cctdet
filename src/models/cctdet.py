@@ -12,8 +12,6 @@ from torchvision.ops import MultiScaleRoIAlign
 from models.cctpredictor import CCTPredictor
 from typing import Dict, List, Optional, Tuple, Union
 from torchvision.models.detection.faster_rcnn import TwoMLPHead
-import types
-from models.rpn_modifications import compute_loss, forward
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 num_classes = len(class_names)
@@ -55,14 +53,14 @@ class CCTdeT(torch.nn.Module):
                                     head=rpn_head,
                                     fg_iou_thresh=0.7,
                                     bg_iou_thresh=0.3,
-                                    batch_size_per_image=256,
+                                    batch_size_per_image=512,
                                     positive_fraction=0.5,
                                     pre_nms_top_n=rpn_pre_nms_top_n,
                                     post_nms_top_n=rpn_post_nms_top_n,
                                     nms_thresh=0.5,
                                     score_thresh=0.0)
 
-    box_output_size = 32
+    box_output_size = 16
     box_roi_pool = MultiScaleRoIAlign(featmap_names=['0'], output_size=box_output_size, sampling_ratio=2)
 
     cct = CCT(img_size=(box_output_size,box_output_size),
@@ -82,12 +80,9 @@ class CCTdeT(torch.nn.Module):
                               box_head=torch.nn.Identity(),
                               box_predictor=predictor,
                               fg_iou_thresh=0.5, bg_iou_thresh=0.5,
-                              batch_size_per_image=32, positive_fraction=0.25,
+                              batch_size_per_image=512, positive_fraction=0.25,
                               bbox_reg_weights=None,
                               score_thresh=0.05, nms_thresh=0.5, detections_per_img=200)
-    # loss changes
-    self.rpn.compute_loss = types.MethodType(compute_loss, self.rpn)
-    self.rpn.forward = types.MethodType(forward, self.rpn)
 
   def forward(self, images, targets=None):
     if self.training:
