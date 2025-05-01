@@ -23,9 +23,9 @@ def get_transforms(img_size=(1333, 800), train=True):
       v2.GaussianBlur(kernel_size=(3, 7), sigma=(0.1, 2.0)),
       v2.GaussianNoise()
     ]
-    transforms_list.append(v2.RandomOrder([v2.RandomApply([t], p=0.8) for t in random_transforms]))
-  else:
-    transforms_list.append(v2.Resize(size=img_size, antialias=True))
+    transforms_list.append(v2.RandomOrder(random_transforms))
+  # else:
+  #   transforms_list.append(v2.Resize(size=img_size, antialias=True))
 
   transforms_list.extend([
     v2.ToDtype(torch.float32, scale=True),

@@ -8,7 +8,7 @@ class_names = {
   4: 'van',
   5: 'truck',
   6: 'tricycle',
-  7: 'awning-tricycle',
+  7: 'ajning-tricycle',
   8: 'bus',
   9: 'motor'
 }

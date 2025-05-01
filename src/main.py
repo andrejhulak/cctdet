@@ -10,9 +10,12 @@ from torchvision.models.detection.faster_rcnn import fasterrcnn_resnet50_fpn_v2
 from utils.misc import class_names
 from transforms import get_transforms 
 from torchvision.models.detection import ssdlite320_mobilenet_v3_large
+from collections import Counter, OrderedDict
+from tqdm import tqdm
+import numpy as np
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-BATCH_SIZE = 16
+BATCH_SIZE = 1
 
 if __name__ == "__main__":
   train_root = "data/VisDrone/VisDrone2019-DET-train"
@@ -20,9 +23,8 @@ if __name__ == "__main__":
   train_dl = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True,
                         collate_fn=collate_fn_simple)
 
-  model = ssdlite320_mobilenet_v3_large(num_classes=len(class_names)).to(device)
-  # model = CCTdeT().to(device)
-  # model = fasterrcnn_resnet50_fpn_v2(num_classes=len(class_names)).to(device)
+  # model = ssdlite320_mobilenet_v3_large(num_classes=num_classes).to(device)
+  model = CCTdeT().to(device)
   # checkpoint = torch.load("model_weights/cctdet/weights/model_epoch_1.pth")
   # model.load_state_dict(checkpoint)
   
@@ -31,7 +33,7 @@ if __name__ == "__main__":
   total_params = sum(p.numel() for p in model.parameters())
   print(total_params)
 
-  epochs = 2
+  epochs = 1
   for epoch in range(1, epochs+1):
     avg_loss = train(model, train_dl, optimizer, epoch)
     print(f"Epoch {epoch}/{epochs}  loss: {avg_loss:.4f}")

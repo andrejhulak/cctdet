@@ -7,11 +7,13 @@ from torchvision.models import mobilenet_v2, MobileNet_V2_Weights
 from torchvision.models.detection.transform import GeneralizedRCNNTransform
 from vit_pytorch.cct import CCT
 from utils.misc import class_names
-from torchvision.models.detection.roi_heads import RoIHeads
+from models.roi_head_modifications import RoIHeads
 from torchvision.ops import MultiScaleRoIAlign
 from models.cctpredictor import CCTPredictor
 from typing import Dict, List, Optional, Tuple, Union
 from torchvision.models.detection.faster_rcnn import TwoMLPHead
+import types
+from models.rpn_modifications import compute_loss, forward
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 num_classes = len(class_names)
@@ -74,10 +76,6 @@ class CCTdeT(torch.nn.Module):
               num_classes=num_classes,
               positional_embedding='learnable')
 
-    resolution = box_roi_pool.output_size[0]
-    representation_size = 128
-    box_head = TwoMLPHead(out_channels * resolution**2, representation_size)
-
     predictor = CCTPredictor(cct, embed_dim=128, num_classes=num_classes)
 
     self.roi_heads = RoIHeads(box_roi_pool=box_roi_pool,
@@ -87,6 +85,9 @@ class CCTdeT(torch.nn.Module):
                               batch_size_per_image=32, positive_fraction=0.25,
                               bbox_reg_weights=None,
                               score_thresh=0.05, nms_thresh=0.5, detections_per_img=200)
+    # loss changes
+    self.rpn.compute_loss = types.MethodType(compute_loss, self.rpn)
+    self.rpn.forward = types.MethodType(forward, self.rpn)
 
   def forward(self, images, targets=None):
     if self.training:
