@@ -52,7 +52,7 @@ class VisDrone(torch.utils.data.Dataset):
     if self.transforms:
       img, target = self.transforms(img, target)
 
-    img /= 255.0
+    # img /= 255.0
 
     return img, target
 

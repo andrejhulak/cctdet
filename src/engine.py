@@ -9,7 +9,7 @@ import os
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-def train(model, dataloader, optimizer, epoch, save_dir="model_weights/fasterrcnn/weights"):
+def train(model, dataloader, optimizer, epoch, save_dir="model_weights/ssdlite/weights"):
   model.train()
   total_loss = 0.0
   num_batches = len(dataloader)
@@ -22,6 +22,8 @@ def train(model, dataloader, optimizer, epoch, save_dir="model_weights/fasterrcn
     images = [img.to(device) for img in images]
     targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
 
+    # this is dangerous when having a newly initialized model but oh well we will see
+    # with torch.autocast(device_type="cuda", dtype=torch.float16):
     losses = model(images, targets)
     loss = sum(l for l in losses.values())
 

@@ -20,6 +20,7 @@ class CCTdeT(torch.nn.Module):
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
 
+    # TODO probaly remove this and do something of our own, makes no sense that it's here twice
     min_size=800
     max_size=1333
     image_mean = [0.485, 0.456, 0.406]
@@ -59,7 +60,7 @@ class CCTdeT(torch.nn.Module):
                                     nms_thresh=0.5,
                                     score_thresh=0.0)
 
-    box_output_size = 16
+    box_output_size = 32
     box_roi_pool = MultiScaleRoIAlign(featmap_names=['0'], output_size=box_output_size, sampling_ratio=2)
 
     cct = CCT(img_size=(box_output_size,box_output_size),
