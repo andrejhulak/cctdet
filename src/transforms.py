@@ -2,7 +2,7 @@ import torch
 import torchvision.transforms.v2 as v2
 import random
 
-def get_transforms(img_size=(1333, 800), train=True):
+def get_transforms(img_size=(640, 640), train=True):
   transforms_list = []
 
   if train:
@@ -32,4 +32,5 @@ def get_transforms(img_size=(1333, 800), train=True):
     v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
   ])
 
-  return v2.Compose(transforms_list)
+  # return v2.Compose(transforms_list)
+  return v2.Resize(size=img_size, antialias=True)

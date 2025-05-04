@@ -21,10 +21,12 @@ class CCTdeT(torch.nn.Module):
     super().__init__(*args, **kwargs)
 
     # TODO probaly remove this and do something of our own, makes no sense that it's here twice
-    min_size=800
-    max_size=1333
-    image_mean = [0.485, 0.456, 0.406]
-    image_std = [0.229, 0.224, 0.225]
+    min_size=640
+    max_size=640
+    # image_mean = [0.485, 0.456, 0.406]
+    image_mean = [1, 1, 1]
+    # image_std = [0.229, 0.224, 0.225]
+    image_std = [1, 1, 1]
     self.transform = GeneralizedRCNNTransform(min_size, max_size, image_mean, image_std)
  
     # backbone = resnet50(weights=ResNet50_Weights.DEFAULT)
@@ -53,14 +55,14 @@ class CCTdeT(torch.nn.Module):
                                     head=rpn_head,
                                     fg_iou_thresh=0.7,
                                     bg_iou_thresh=0.3,
-                                    batch_size_per_image=512,
+                                    batch_size_per_image=100,
                                     positive_fraction=0.5,
                                     pre_nms_top_n=rpn_pre_nms_top_n,
                                     post_nms_top_n=rpn_post_nms_top_n,
                                     nms_thresh=0.5,
                                     score_thresh=0.0)
 
-    box_output_size = 16
+    box_output_size = 4
     box_roi_pool = MultiScaleRoIAlign(featmap_names=['0'], output_size=box_output_size, sampling_ratio=2)
 
     cct = CCT(img_size=(box_output_size,box_output_size),
@@ -80,7 +82,7 @@ class CCTdeT(torch.nn.Module):
                               box_head=torch.nn.Identity(),
                               box_predictor=predictor,
                               fg_iou_thresh=0.5, bg_iou_thresh=0.5,
-                              batch_size_per_image=512, positive_fraction=0.25,
+                              batch_size_per_image=100, positive_fraction=0.25,
                               bbox_reg_weights=None,
                               score_thresh=0.05, nms_thresh=0.5, detections_per_img=200)
 
@@ -128,3 +130,99 @@ class CCTdeT(torch.nn.Module):
       return losses
     else:
       return detections
+
+  def forward(self, batch, **kwargs):
+    if isinstance(batch, dict):
+      for name, param in self.named_parameters():
+        dtype = param.data.dtype
+        break
+
+      images = [img.to(dtype) / 255.0 for img in batch['img']]
+      batch_idx = batch['batch_idx']
+      boxes_all = batch['bboxes']
+      labels_all = batch['cls'].view(-1).to(torch.int64)
+
+      targets = []
+      for i in range(len(images)):
+        mask = (batch_idx == i)
+        boxes_normalized_xywh = boxes_all[mask]
+        labels = labels_all[mask]
+
+        original_h, original_w = 640, 640
+
+        boxes_unnormalized_xyxy = boxes_normalized_xywh.clone()
+
+        center_x_norm = boxes_unnormalized_xyxy[:, 0]
+        center_y_norm = boxes_unnormalized_xyxy[:, 1]
+        width_norm = boxes_unnormalized_xyxy[:, 2]
+        height_norm = boxes_unnormalized_xyxy[:, 3]
+
+        x_min = (center_x_norm - width_norm / 2) * original_w
+        y_min = (center_y_norm - height_norm / 2) * original_h
+        x_max = (center_x_norm + width_norm / 2) * original_w
+        y_max = (center_y_norm + height_norm / 2) * original_h
+
+        boxes_unnormalized_xyxy[:, 0] = x_min
+        boxes_unnormalized_xyxy[:, 1] = y_min
+        boxes_unnormalized_xyxy[:, 2] = x_max
+        boxes_unnormalized_xyxy[:, 3] = y_max
+
+        targets.append({'boxes': boxes_unnormalized_xyxy, 'labels': labels})
+
+      images = [img.to(device) for img in images]
+      for t in targets:
+        t['boxes'] = t['boxes'].to(device)
+        t['labels'] = t['labels'].to(device)
+
+      original_image_sizes: List[Tuple[int, int]] = []
+      for img in images:
+        val = img.shape[-2:]
+        torch._assert(
+          len(val) == 2,
+          f"expecting the last two dimensions of the Tensor to be H and W instead got {img.shape[-2:]}",
+        )
+        original_image_sizes.append((val[0], val[1]))
+
+      images, targets = self.transform(images, targets)
+      features = self.backbone(images.tensors)
+
+      if isinstance(features, torch.Tensor):
+        features = OrderedDict([("0", features)])
+
+      proposals, proposal_losses = self.rpn(images, features, targets)
+      detections, detector_losses = self.roi_heads(features, proposals, images.image_sizes, targets)
+      detections = self.transform.postprocess(detections, images.image_sizes, original_image_sizes)
+
+      losses = {}
+      losses.update(detector_losses)
+      losses.update(proposal_losses)
+
+      if self.training:
+        total_loss = sum(losses.values())
+        loss_items = torch.stack([losses[k] for k in losses.keys()])
+        return total_loss, loss_items
+      else:
+        return detections
+    else: 
+      images = [img.to(torch.float16) / 255.0 for img in batch]
+      images = [img.to(device) for img in images]
+      original_image_sizes = [img.shape[-2:] for img in images]
+
+      images_transformed, _ = self.transform(images, None)
+
+      features = self.backbone(images_transformed.tensors)
+
+      if isinstance(features, torch.Tensor):
+        features = OrderedDict([('0', features)])
+
+      proposals, _ = self.rpn(images_transformed, features, None)
+      detections, _ = self.roi_heads(features, proposals, images_transformed.image_sizes, None)
+      detections = self.transform.postprocess(detections, images_transformed.image_sizes, original_image_sizes)
+
+      return detections
+
+  def loss(self, batch, preds):
+    if self.training:
+      return self.forward(batch)
+    else:
+      return torch.tensor(0.0, device=device), torch.zeros(4, device=device)
