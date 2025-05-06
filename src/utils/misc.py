@@ -16,10 +16,12 @@ class_names = {
 def collate_fn_simple(batch):
   images = []
   targets = []
-  for image, target in batch:
+  img_paths = []
+  for image, target, img_path in batch:
     images.append(image)
     targets.append(target)
-  return images, targets
+    img_paths.append(img_path)
+  return images, targets, img_paths
 
 def format_metrics(metrics, class_names=class_names):
   formatted_output = "Evaluation Metrics:\n"

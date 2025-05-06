@@ -47,24 +47,37 @@ def train(model, dataloader, optimizer, epoch, save_dir="model_weights/cctdetnew
 
   return total_loss / len(dataloader)
 
-
 @torch.no_grad()
 def evaluate(model, dataloader):
-  metric = MeanAveragePrecision(box_format='xyxy', class_metrics=True).to(device)
   model.eval()
-  metric.eval()
-  ret = None
+  metric = MeanAveragePrecision(box_format='xyxy', class_metrics=True).to(device)
+  
+  for images, targets, _ in tqdm(dataloader):
+    imgs = [img.to(device) for img in images]
+    
+    detections = model(imgs)
+    
+    preds = []
+    for i, det in enumerate(detections):
+      preds.append({
+        'boxes': det['boxes'].detach().cpu(),
+        'scores': det['scores'].detach().cpu(),
+        'labels': det['labels'].detach().cpu().int()
+      })
 
-  for images, targets in dataloader:
-    images = [img.to(device) for img in images]
-    targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
+    gt_boxes = [t['boxes'].cpu() for t in targets]
+    gt_labels = [t['labels'].flatten().cpu().int() for t in targets]
+    print(f'gt_labels min: {min(gt_labels[i])}')
+    print(f'gt_labels max: {max(gt_labels[i])}')
 
-    outputs = model(images)
+    print(f'pred_labels min: {min(preds[i]["labels"])}')
+    print(f'pred_labels max: {max(preds[i]["labels"])}')
 
-    metric.update(outputs, targets)
+    gt = [{'boxes': b, 'labels': l} for b, l in zip(gt_boxes, gt_labels)]
 
-  ret = metric.compute()
-  return ret
+    metric.update(preds, gt)
+  
+  return metric.compute()
 
 # don't think this works
 @torch.no_grad()

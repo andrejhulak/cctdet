@@ -6,6 +6,7 @@ from ultralytics.data import build_dataloader, build_yolo_dataset
 from ultralytics.utils.torch_utils import de_parallel, torch_distributed_zero_first
 from models.cctdet import CCTdeT
 from ultralytics.models.yolo.detect import DetectionValidator
+from ultralytics.models.yolo.detect import DetectionTrainer
 from copy import copy
 import torch
 from torchmetrics.detection import MeanAveragePrecision
@@ -112,6 +113,23 @@ class CCTValidator(DetectionValidator):
 class CCTTrainer(BaseTrainer):
   def get_model(self, cfg=None, weights=None, verbose=None):
     model = CCTdeT()
+    ckpt_path = "runs/detect/best.pt"
+    checkpoint = torch.load(ckpt_path, weights_only=False, map_location=self.device)
+
+    if 'ema' in checkpoint and hasattr(checkpoint['ema'], 'state_dict'):
+      ema_state_dict = checkpoint['ema'].state_dict()
+    elif 'ema_state_dict' in checkpoint:
+       ema_state_dict = checkpoint['ema_state_dict']
+    elif 'model' in checkpoint:
+       ema_state_dict = checkpoint['model'].state_dict()
+    else:
+       raise KeyError("Could not find compatible model state_dict in checkpoint.")
+
+    from ultralytics.utils.torch_utils import de_parallel
+    ema_state_dict = de_parallel(ema_state_dict)
+
+    model.load_state_dict(ema_state_dict, strict=True)
+    model.to(torch.float32)
     return model
 
   def build_dataset(self, img_path, mode="train", batch=None):
@@ -138,7 +156,7 @@ class CCTTrainer(BaseTrainer):
 if __name__ == "__main__":
   overrides = {
     'data': 'VisDrone.yaml',
-    'epochs': 5,
+    'epochs': 1,
     'batch': 1,
     'device': '0'
   }
