@@ -67,11 +67,12 @@ def evaluate(model, dataloader):
 
     gt_boxes = [t['boxes'].cpu() for t in targets]
     gt_labels = [t['labels'].flatten().cpu().int() for t in targets]
-    print(f'gt_labels min: {min(gt_labels[i])}')
-    print(f'gt_labels max: {max(gt_labels[i])}')
 
-    print(f'pred_labels min: {min(preds[i]["labels"])}')
-    print(f'pred_labels max: {max(preds[i]["labels"])}')
+    # print(f'gt_labels min: {min(gt_labels[i])}')
+    # print(f'gt_labels max: {max(gt_labels[i])}')
+
+    # print(f'pred_labels min: {min(preds[i]["labels"])}')
+    # print(f'pred_labels max: {max(preds[i]["labels"])}')
 
     gt = [{'boxes': b, 'labels': l} for b, l in zip(gt_boxes, gt_labels)]
 

@@ -1,16 +1,16 @@
 import torch
 
 class_names = {
-  0: 'pedestrian',
-  1: 'people',
-  2: 'bicycle',
-  3: 'car',
-  4: 'van',
-  5: 'truck',
-  6: 'tricycle',
-  7: 'ajning-tricycle',
-  8: 'bus',
-  9: 'motor'
+  1: 'pedestrian',
+  2: 'people',
+  3: 'bicycle',
+  4: 'car',
+  5: 'van',
+  6: 'truck',
+  7: 'tricycle',
+  8: 'ajning-tricycle',
+  9: 'bus',
+  10: 'motor'
 }
 
 def collate_fn_simple(batch):

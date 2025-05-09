@@ -6,7 +6,6 @@ from torchvision.models.detection.transform import GeneralizedRCNNTransform
 from torchvision.models.detection.roi_heads import RoIHeads
 from vit_pytorch.cct import CCT
 from utils.misc import class_names
-# from models.roi_head_modifications import RoIHeads
 from torchvision.ops import MultiScaleRoIAlign
 from models.cctpredictor import CCTPredictor
 from typing import Dict, List, Optional, Tuple, Union
@@ -14,7 +13,7 @@ from torchvision.models.detection.faster_rcnn import TwoMLPHead
 from torchvision.models.detection.backbone_utils import resnet_fpn_backbone
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-num_classes = len(class_names)
+num_classes = len(class_names) + 1 # for the background class
 
 class CCTdeT(torch.nn.Module):
   def __init__(self, *args, **kwargs):
@@ -35,7 +34,7 @@ class CCTdeT(torch.nn.Module):
     rpn_post_nms_top_n_test=1000
 
     anchor_sizes = ((8,), (16,), (32,), (64,), (128,))
-    aspect_ratios = ((0.5, 1.0, 2.0),) * len(anchor_sizes)
+    aspect_ratios = ((0.5, 1.0, 1.5),) * len(anchor_sizes)
     anchor_generator = AnchorGenerator(sizes=anchor_sizes, aspect_ratios=aspect_ratios)
 
     rpn_head = RPNHead(backbone.out_channels, anchor_generator.num_anchors_per_location()[0])
@@ -55,7 +54,7 @@ class CCTdeT(torch.nn.Module):
                                     score_thresh=0.0)
 
     box_output_size = 28
-    box_roi_pool = MultiScaleRoIAlign(featmap_names=['0', '1', '2', '3'], output_size=box_output_size, sampling_ratio=2)
+    box_roi_pool = MultiScaleRoIAlign(featmap_names=['0', '1', '2', '3'], output_size=box_output_size, sampling_ratio=4)
 
     cct = CCT(img_size=(box_output_size,box_output_size),
               embedding_dim=512,
@@ -93,7 +92,7 @@ class CCTdeT(torch.nn.Module):
       for i in range(len(images)):
         mask = (batch_idx == i)
         boxes_normalized_xywh = boxes_all[mask]
-        labels = labels_all[mask]
+        labels = labels_all[mask] + 1
 
         original_h, original_w = images[i].shape[1:]
 
@@ -143,7 +142,7 @@ class CCTdeT(torch.nn.Module):
 
       if self.training:
         total_loss = sum(losses.values())
-        loss_items = torch.stack([losses[k] for k in losses.keys()])
+        loss_items = torch.stack([losses[k] for k in losses.keys()]).detach().cpu()
         return total_loss, loss_items
       else:
         return detections

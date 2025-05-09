@@ -42,7 +42,7 @@ class VisDrone(torch.utils.data.Dataset):
           if class_id == 0 or class_id == 11:
             continue
 
-          class_id -= 1
+          # class_id -= 1
 
           xmax = xmin + width
           ymax = ymin + height

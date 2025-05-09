@@ -19,7 +19,7 @@ CONF_THRESHOLD = 0.5  # Confidence threshold to display predictions
 BOX_COLOR = (0, 255, 0)  # Green color for bounding boxes
 TEXT_COLOR = (0, 0, 255)  # Red color for class labels
 
-def visualize_predictions(model, dataloader, class_names, confidence_threshold=0.5):
+def visualize_predictions(model, dataloader, class_names, confidence_threshold=0.75):
     model.eval()
     with torch.no_grad():
       for images, targets, image_paths in tqdm(dataloader, desc="Visualizing Predictions"):
@@ -46,9 +46,8 @@ def visualize_predictions(model, dataloader, class_names, confidence_threshold=0
                 cv2.putText(image, label_text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, TEXT_COLOR, 2)
 
             cv2.imshow(f"Prediction {os.path.basename(image_paths[i])}", image)
-            cv2.waitKey(0)
+            cv2.waitKey(5000)
         cv2.destroyAllWindows()
-        break
 
 if __name__ == "__main__":
   val_root = "data/VisDrone/VisDrone2019-DET-val"
@@ -57,7 +56,7 @@ if __name__ == "__main__":
                       collate_fn=collate_fn_simple, num_workers=4)
 
   model = CCTdeT()
-  ckpt_path = "runs/detect/best.pt"
+  ckpt_path = "runs/detect/fixed/best.pt"
   checkpoint = torch.load(ckpt_path, weights_only=False, map_location=device)
 
   if 'ema' in checkpoint and hasattr(checkpoint['ema'], 'state_dict'):
