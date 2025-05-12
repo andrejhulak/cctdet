@@ -25,7 +25,6 @@ class CCTPredictor(torch.nn.Module):
     
     for blk in self.blocks:
       x = blk(x)
-      torch.cuda.empty_cache()
     
     x = self.norm(x)
     

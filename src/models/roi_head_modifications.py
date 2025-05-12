@@ -805,9 +805,9 @@ class RoIHeads(nn.Module):
             labels = labels.view(1, -1).expand_as(scores)
 
             # remove predictions with the background label
-            # boxes = boxes[:, 1:]
-            # scores = scores[:, 1:]
-            # labels = labels[:, 1:]
+            boxes = boxes[:, 1:]
+            scores = scores[:, 1:]
+            labels = labels[:, 1:]
 
             # batch everything, by making every class prediction be a separate instance
             boxes = boxes.reshape(-1, 4)

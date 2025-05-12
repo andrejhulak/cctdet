@@ -11,6 +11,8 @@ from copy import copy
 import torch
 from torchmetrics.detection import MeanAveragePrecision
 from ultralytics.utils import LOGGER
+from torchvision.models.detection.faster_rcnn import FasterRCNN_ResNet50_FPN_V2_Weights, fasterrcnn_resnet50_fpn_v2
+from utils.misc import load_part_of_pretrained_model
 
 class CCTValidator(DetectionValidator):
   def __init__(self, dataloader=None, save_dir=None, pbar=None, args=None, _callbacks=None):
@@ -112,23 +114,26 @@ class CCTValidator(DetectionValidator):
 
 class CCTTrainer(BaseTrainer):
   def get_model(self, cfg=None, weights=None, verbose=None):
+    fasterrcnn_state_dict = fasterrcnn_resnet50_fpn_v2(FasterRCNN_ResNet50_FPN_V2_Weights.COCO_V1).state_dict()
     model = CCTdeT()
-    ckpt_path = "runs/detect/train38/weights/best.pt"
-    checkpoint = torch.load(ckpt_path, weights_only=False, map_location=self.device)
+    model = load_part_of_pretrained_model(fasterrcnn_state_dict, model)
 
-    if 'ema' in checkpoint and hasattr(checkpoint['ema'], 'state_dict'):
-      ema_state_dict = checkpoint['ema'].state_dict()
-    elif 'ema_state_dict' in checkpoint:
-       ema_state_dict = checkpoint['ema_state_dict']
-    elif 'model' in checkpoint:
-       ema_state_dict = checkpoint['model'].state_dict()
-    else:
-       raise KeyError("Could not find compatible model state_dict in checkpoint.")
+    # ckpt_path = "runs/detect/train2/weights/best.pt"
+    # checkpoint = torch.load(ckpt_path, weights_only=False, map_location=self.device)
 
-    from ultralytics.utils.torch_utils import de_parallel
-    ema_state_dict = de_parallel(ema_state_dict)
+    # if 'ema' in checkpoint and hasattr(checkpoint['ema'], 'state_dict'):
+    #    ema_state_dict = checkpoint['ema'].state_dict()
+    # elif 'ema_state_dict' in checkpoint:
+    #    ema_state_dict = checkpoint['ema_state_dict']
+    # elif 'model' in checkpoint:
+    #    ema_state_dict = checkpoint['model'].state_dict()
+    # else:
+    #    raise KeyError("Could not find compatible model state_dict in checkpoint.")
 
-    model.load_state_dict(ema_state_dict, strict=True)
+    # from ultralytics.utils.torch_utils import de_parallel
+    # ema_state_dict = de_parallel(ema_state_dict)
+
+    # model.load_state_dict(ema_state_dict, strict=True)
     model.to(torch.float32)
     return model
 
@@ -141,7 +146,7 @@ class CCTTrainer(BaseTrainer):
     with torch_distributed_zero_first(rank):
       dataset = self.build_dataset(dataset_path, mode, batch_size)
     shuffle = mode == "train"
-    workers = self.args.workers if mode == "train" else self.args.workers * 2
+    workers = self.args.workers if mode == "train" else self.args.workers * 3
     return build_dataloader(dataset, batch_size, workers, shuffle, rank) 
 
   def get_validator(self):

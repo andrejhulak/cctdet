@@ -57,3 +57,13 @@ def format_metrics(metrics, class_names=class_names):
         formatted_output += f"    Class {class_index}: {value:.4f}\n"
 
   return formatted_output
+
+def load_part_of_pretrained_model(pretrained_dict, model):
+  model_dict = model.state_dict()
+  for k, v in pretrained_dict.items():
+    if k in model_dict:
+      pretrained_dict = {k: v}
+
+  model_dict.update(pretrained_dict) 
+  model.load_state_dict(model_dict)
+  return model
