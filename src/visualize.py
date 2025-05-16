@@ -15,9 +15,9 @@ from ultralytics.nn.tasks import attempt_load_weights
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 BATCH_SIZE = 1
-CONF_THRESHOLD = 0.5  # Confidence threshold to display predictions
-BOX_COLOR = (0, 255, 0)  # Green color for bounding boxes
-TEXT_COLOR = (0, 0, 255)  # Red color for class labels
+CONF_THRESHOLD = 0.5
+BOX_COLOR = (0, 255, 0)
+TEXT_COLOR = (0, 0, 255)
 
 def visualize_predictions(model, dataloader, class_names, confidence_threshold=0.75):
     model.eval()

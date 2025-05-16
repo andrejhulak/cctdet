@@ -50,7 +50,7 @@ def train(model, dataloader, optimizer, epoch, save_dir="model_weights/cctdetnew
 @torch.no_grad()
 def evaluate(model, dataloader):
   model.eval()
-  metric = MeanAveragePrecision(box_format='xyxy', class_metrics=True).to(device)
+  metric = MeanAveragePrecision(box_format='xyxy', iou_thresholds=[0.5], class_metrics=True).to(device)
   
   for images, targets, _ in tqdm(dataloader):
     imgs = [img.to(device) for img in images]

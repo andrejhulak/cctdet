@@ -23,7 +23,7 @@ class CCTdeT(torch.nn.Module):
     super().__init__(*args, **kwargs)
 
     self.transform = GeneralizedRCNNTransform(
-      min_size=1333, max_size=800,
+      min_size=800, max_size=1333,
       image_mean=[0.485, 0.456, 0.406],
       image_std=[0.229, 0.224, 0.225]
     )

@@ -24,7 +24,6 @@ class VisDrone(torch.utils.data.Dataset):
     img = decode_image(read_file(img_path)).to(torch.float32)
     # resize_transform = torchvision.transforms.Resize((640, 640))
     # img = resize_transform(img)
-    print(img.shape)
 
     ann_path = os.path.join(self.annotations_dir, f"{base_name}.txt")
     boxes = []
