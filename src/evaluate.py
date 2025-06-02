@@ -4,12 +4,13 @@ from datasets.ds import VisDrone
 from torch.utils.data import DataLoader
 from utils.misc import collate_fn_simple, format_metrics, class_names
 from models.cctdet import CCTdeT
-from engine import evaluate, train
+from engine import evaluate, train, conf_mat
 from transforms import get_transforms
 from collections import Counter, OrderedDict
 from tqdm import tqdm
 import numpy as np
 import os
+from ultralytics.utils.metrics import ConfusionMatrix
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 BATCH_SIZE = 1
@@ -21,7 +22,8 @@ if __name__ == "__main__":
                       collate_fn=collate_fn_simple)
 
   model = CCTdeT()
-  ckpt_path = "runs/detect/biggest/best.pt"
+  # ckpt_path = "runs/detect/fasterrcnn3/best.pt"
+  ckpt_path = "runs/detect/wow3/last.pt"
   checkpoint = torch.load(ckpt_path, weights_only=False, map_location=device)
 
   if 'ema' in checkpoint and hasattr(checkpoint['ema'], 'state_dict'):
@@ -39,3 +41,6 @@ if __name__ == "__main__":
 
   metrics = evaluate(model, val_dl)
   print(format_metrics(metrics))
+
+  # mat = conf_mat(model, val_dl)
+  # mat.plot()

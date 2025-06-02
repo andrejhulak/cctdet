@@ -45,8 +45,7 @@ class CCTdeT(torch.nn.Module):
     aspect_ratios = ((0.5, 1.0, 1.5),) * len(anchor_sizes)
     anchor_generator = AnchorGenerator(sizes=anchor_sizes, aspect_ratios=aspect_ratios)
 
-    rpn_head = RPNHead(backbone.out_channels, anchor_generator.num_anchors_per_location()[0], conv_depth=4)
-    # rpn_head = RPNHead(backbone.out_channels, anchor_generator.num_anchors_per_location()[0], conv_depth=2)
+    rpn_head = RPNHead(backbone.out_channels, anchor_generator.num_anchors_per_location()[0], conv_depth=2)
 
     rpn_pre_nms_top_n = dict(training=rpn_pre_nms_top_n_train, testing=rpn_pre_nms_top_n_test)
     rpn_post_nms_top_n = dict(training=rpn_post_nms_top_n_train, testing=rpn_post_nms_top_n_test)
@@ -64,10 +63,10 @@ class CCTdeT(torch.nn.Module):
 
     # box_output_size = 7
 
-    # box_roi_pool = MultiScaleRoIAlign(featmap_names=['0', '1', '2', '3'], output_size=box_output_size, sampling_ratio=2)
+    # box_roi_pool = MultiScaleRoIAlign(featmap_names=['0', '1', '2', '3', '4'], output_size=box_output_size, sampling_ratio=2)
 
     # box_head = FastRCNNConvFCHead(
-    #     (backbone.out_channels, 7, 7), [256, 256, 256, 256], [1024], norm_layer=torch.nn.BatchNorm2d
+    #     (backbone.out_channels, box_output_size, box_output_size), [256, 256, 256, 256], [1024], norm_layer=torch.nn.BatchNorm2d
     # )
 
     # representation_size = 1024
@@ -79,11 +78,11 @@ class CCTdeT(torch.nn.Module):
     #                           fg_iou_thresh=0.5, bg_iou_thresh=0.5,
     #                           batch_size_per_image=256, positive_fraction=0.25,
     #                           bbox_reg_weights=None,
-    #                           score_thresh=0.05, nms_thresh=0.5, detections_per_img=100)
+    #                           score_thresh=0.05, nms_thresh=0.5, detections_per_img=300)
 
-    dim = 768
-    box_output_size = 32
-    box_roi_pool = MultiScaleRoIAlign(featmap_names=['0', '1', '2', '3'], output_size=box_output_size, sampling_ratio=4)
+    dim = 384
+    box_output_size = 7
+    box_roi_pool = MultiScaleRoIAlign(featmap_names=['0', '1', '2', '3', '4'], output_size=box_output_size, sampling_ratio=2)
 
     cct = CCT(img_size=(box_output_size,box_output_size),
               embedding_dim=dim,
@@ -92,7 +91,7 @@ class CCTdeT(torch.nn.Module):
               kernel_size=7, stride=2, padding=3,
               pooling_kernel_size=3, pooling_stride=2,
               pooling_padding=1,
-              num_layers=8, num_heads=8, mlp_ratio=3.0,
+              num_layers=4, num_heads=4, mlp_ratio=3.0,
               num_classes=num_classes,
               positional_embedding='learnable')
 
@@ -104,7 +103,7 @@ class CCTdeT(torch.nn.Module):
                               fg_iou_thresh=0.5, bg_iou_thresh=0.5,
                               batch_size_per_image=256, positive_fraction=0.25,
                               bbox_reg_weights=None,
-                              score_thresh=0.05, nms_thresh=0.5, detections_per_img=500)
+                              score_thresh=0.05, nms_thresh=0.5, detections_per_img=300)
 
   def forward(self, batch, **kwargs):
     if isinstance(batch, dict):

@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 from tqdm import tqdm
 import os
+from ultralytics.utils.metrics import ConfusionMatrix
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -50,7 +51,8 @@ def train(model, dataloader, optimizer, epoch, save_dir="model_weights/cctdetnew
 @torch.no_grad()
 def evaluate(model, dataloader):
   model.eval()
-  metric = MeanAveragePrecision(box_format='xyxy', iou_thresholds=[0.5], class_metrics=True).to(device)
+  # metric = MeanAveragePrecision(box_format='xyxy', iou_thresholds=[0.5], class_metrics=True).to(device)
+  metric = MeanAveragePrecision(box_format='xyxy', class_metrics=True).to(device)
   
   for images, targets, _ in tqdm(dataloader):
     imgs = [img.to(device) for img in images]
@@ -68,17 +70,37 @@ def evaluate(model, dataloader):
     gt_boxes = [t['boxes'].cpu() for t in targets]
     gt_labels = [t['labels'].flatten().cpu().int() for t in targets]
 
-    # print(f'gt_labels min: {min(gt_labels[i])}')
-    # print(f'gt_labels max: {max(gt_labels[i])}')
-
-    # print(f'pred_labels min: {min(preds[i]["labels"])}')
-    # print(f'pred_labels max: {max(preds[i]["labels"])}')
-
     gt = [{'boxes': b, 'labels': l} for b, l in zip(gt_boxes, gt_labels)]
 
     metric.update(preds, gt)
   
   return metric.compute()
+
+@torch.no_grad()
+def conf_mat(model, dataloader):
+  model.eval()
+  metric = ConfusionMatrix(nc=10)
+
+  for images, targets, _ in tqdm(dataloader):
+    imgs = [img.to(device) for img in images]
+    detections = model(imgs)
+
+    for i in range(len(imgs)):
+      det = detections[i]
+
+      boxes = det['boxes']
+      scores = det['scores'].unsqueeze(1)
+      labels = det['labels'].unsqueeze(1).int() - 1
+
+      pred_tensor = torch.cat([boxes, scores, labels], dim=1).cpu()
+
+      tgt = targets[i]
+      gt_boxes = tgt['boxes'].cpu()
+      gt_labels = tgt['labels'].unsqueeze(1).int().cpu() - 1
+
+      metric.process_batch(pred_tensor, gt_boxes, gt_labels)
+
+  return metric
 
 # don't think this works
 @torch.no_grad()

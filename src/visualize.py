@@ -56,7 +56,7 @@ if __name__ == "__main__":
                       collate_fn=collate_fn_simple, num_workers=4)
 
   model = CCTdeT()
-  ckpt_path = "runs/detect/biggest/best.pt"
+  ckpt_path = "runs/detect/wow3/last.pt"
   checkpoint = torch.load(ckpt_path, weights_only=False, map_location=device)
 
   if 'ema' in checkpoint and hasattr(checkpoint['ema'], 'state_dict'):
