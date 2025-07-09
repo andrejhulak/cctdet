@@ -106,48 +106,10 @@ class CCTdeT(torch.nn.Module):
                               score_thresh=0.05, nms_thresh=0.5, detections_per_img=300)
 
   def forward(self, batch, **kwargs):
+    # do we even need this?
     if isinstance(batch, dict):
-      for name, param in self.named_parameters():
-        dtype = param.data.dtype
-        break
-
-      images = [img.to(dtype) / 255.0 for img in batch['img']]
-      batch_idx = batch['batch_idx']
-      boxes_all = batch['bboxes']
-      labels_all = batch['cls'].view(-1).to(torch.int64)
-
-      targets = []
-      for i in range(len(images)):
-        mask = (batch_idx == i)
-        boxes_normalized_xywh = boxes_all[mask]
-        labels = labels_all[mask] + 1
-
-        original_h, original_w = images[i].shape[1:]
-
-        boxes_unnormalized_xyxy = boxes_normalized_xywh.clone()
-
-        center_x_norm = boxes_unnormalized_xyxy[:, 0]
-        center_y_norm = boxes_unnormalized_xyxy[:, 1]
-        width_norm = boxes_unnormalized_xyxy[:, 2]
-        height_norm = boxes_unnormalized_xyxy[:, 3]
-
-        x_min = (center_x_norm - width_norm / 2) * original_w
-        y_min = (center_y_norm - height_norm / 2) * original_h
-        x_max = (center_x_norm + width_norm / 2) * original_w
-        y_max = (center_y_norm + height_norm / 2) * original_h
-
-        boxes_unnormalized_xyxy[:, 0] = x_min
-        boxes_unnormalized_xyxy[:, 1] = y_min
-        boxes_unnormalized_xyxy[:, 2] = x_max
-        boxes_unnormalized_xyxy[:, 3] = y_max
-
-        targets.append({'boxes': boxes_unnormalized_xyxy, 'labels': labels})
-        
-      images = [img.to(device) for img in images]
-      for t in targets:
-        t['boxes'] = t['boxes'].to(device)
-        t['labels'] = t['labels'].to(device)
-
+      images = batch['images']
+      targets = batch['targets']
       original_image_sizes: List[Tuple[int, int]] = []
       for img in images:
         val = img.shape[-2:]

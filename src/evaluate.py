@@ -13,17 +13,18 @@ import os
 from ultralytics.utils.metrics import ConfusionMatrix
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-BATCH_SIZE = 1
+BATCH_SIZE = 4
 
 if __name__ == "__main__":
-  val_root = "data/VisDrone/VisDrone2019-DET-val"
+  val_root = "data/VisDrone2019-DET-val"
   val_ds = VisDrone(root=val_root)
   val_dl = DataLoader(val_ds, batch_size=BATCH_SIZE, shuffle=False,
                       collate_fn=collate_fn_simple)
 
   model = CCTdeT()
   # ckpt_path = "runs/detect/fasterrcnn3/best.pt"
-  ckpt_path = "runs/detect/wow3/last.pt"
+  # ckpt_path = "runs/detect/wow3/last.pt"
+  ckpt_path = "runs/detect/train9/weights/best.pt"
   checkpoint = torch.load(ckpt_path, weights_only=False, map_location=device)
 
   if 'ema' in checkpoint and hasattr(checkpoint['ema'], 'state_dict'):

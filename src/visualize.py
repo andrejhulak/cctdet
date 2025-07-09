@@ -2,13 +2,9 @@ import torch
 from torch.optim import AdamW, SGD
 from datasets.ds import VisDrone
 from torch.utils.data import DataLoader
-from utils.misc import collate_fn_simple, format_metrics, class_names
+from utils.misc import collate_fn_simple, class_names
 from models.cctdet import CCTdeT
-from engine import evaluate, train
-from transforms import get_transforms
-from collections import Counter, OrderedDict
 from tqdm import tqdm
-import numpy as np
 import os
 import cv2
 from ultralytics.nn.tasks import attempt_load_weights
@@ -50,13 +46,15 @@ def visualize_predictions(model, dataloader, class_names, confidence_threshold=0
         cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-  val_root = "data/VisDrone/VisDrone2019-DET-val"
+  val_root = "data/VisDrone2019-DET-val"
   val_ds = VisDrone(root=val_root, transforms=None)
   val_dl = DataLoader(val_ds, batch_size=BATCH_SIZE, shuffle=False,
                       collate_fn=collate_fn_simple, num_workers=4)
 
   model = CCTdeT()
-  ckpt_path = "runs/detect/wow3/last.pt"
+  # ckpt_path = "runs/detect/wow3/last.pt"
+  ckpt_path = "runs/detect/train9/weights/best.pt"
+
   checkpoint = torch.load(ckpt_path, weights_only=False, map_location=device)
 
   if 'ema' in checkpoint and hasattr(checkpoint['ema'], 'state_dict'):
