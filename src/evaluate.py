@@ -1,16 +1,9 @@
 import torch
-from torch.optim import AdamW, SGD
 from datasets.ds import VisDrone
 from torch.utils.data import DataLoader
-from utils.misc import collate_fn_simple, format_metrics, class_names, load_config_from_json
+from utils.misc import collate_fn_simple, format_metrics, load_config_from_args
 from models.cctdet import CCTdeT
 from engine import evaluate, conf_mat
-from collections import Counter, OrderedDict
-from tqdm import tqdm
-import numpy as np
-import os
-from ultralytics.utils.metrics import ConfusionMatrix
-import json
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 BATCH_SIZE = 4
@@ -21,8 +14,10 @@ if __name__ == "__main__":
   val_dl = DataLoader(val_ds, batch_size=BATCH_SIZE, shuffle=False,
                       collate_fn=collate_fn_simple)
 
-  model_number = 9
-  model_config = load_config_from_json(model_number)
+  model_number = 3
+  model_config = load_config_from_args(model_number)
+  print("Running eval with this model config:")
+  print(model_config)
   model = CCTdeT(model_config)
   # ckpt_path = "runs/detect/fasterrcnn3/best.pt"
   # ckpt_path = "runs/detect/wow3/last.pt"

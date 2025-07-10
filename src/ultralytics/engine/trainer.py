@@ -466,9 +466,9 @@ class BaseTrainer:
                 #     self._clear_memory(threshold=0.5)  # prevent VRAM spike
                 #     self.metrics, self.fitness = self.validate()
                 # self.save_metrics(metrics={**self.label_loss_items(self.tloss), **self.metrics, **self.lr})
-                # self.stop |= self.stopper(epoch + 1, self.fitness) or final_epoch
-                # if self.args.time:
-                #     self.stop |= (time.time() - self.train_time_start) > (self.args.time * 3600)
+                self.stop |= self.stopper(epoch + 1, self.fitness) or final_epoch
+                if self.args.time:
+                    self.stop |= (time.time() - self.train_time_start) > (self.args.time * 3600)
 
                 # Save model
                 # if self.args.save or final_epoch:
@@ -501,10 +501,10 @@ class BaseTrainer:
             # Do final val with best.pt
             seconds = time.time() - self.train_time_start
             LOGGER.info(f"\n{epoch - self.start_epoch + 1} epochs completed in {seconds / 3600:.3f} hours.")
-            self.final_eval()
-            if self.args.plots:
-                self.plot_metrics()
-            self.run_callbacks("on_train_end")
+            # self.final_eval()
+            # if self.args.plots:
+            #     self.plot_metrics()
+            # self.run_callbacks("on_train_end")
         self._clear_memory()
         unset_deterministic()
         self.run_callbacks("teardown")

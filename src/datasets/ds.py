@@ -1,7 +1,6 @@
 import torch
 import os
 from torchvision.io import read_file, decode_image
-import torchvision
 
 class VisDrone(torch.utils.data.Dataset):
   def __init__(self, root, transforms=None):
@@ -22,9 +21,6 @@ class VisDrone(torch.utils.data.Dataset):
     base_name = os.path.splitext(img_file)[0]
 
     img = decode_image(read_file(img_path)).to(torch.float32)
-    # resize_transform = torchvision.transforms.Resize((640, 640))
-    # img = resize_transform(img)
-
     ann_path = os.path.join(self.annotations_dir, f"{base_name}.txt")
     boxes = []
     labels = []
@@ -42,8 +38,6 @@ class VisDrone(torch.utils.data.Dataset):
           if class_id == 0 or class_id == 11:
             continue
 
-          # class_id -= 1
-
           xmax = xmin + width
           ymax = ymin + height
           box = [xmin, ymin, xmax, ymax]
@@ -57,8 +51,6 @@ class VisDrone(torch.utils.data.Dataset):
 
     if self.transforms:
       img, target = self.transforms(img, target)
-
-    # img /= 255.0
 
     return img, target, img_path
 

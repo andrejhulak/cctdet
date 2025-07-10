@@ -1,5 +1,7 @@
+# it's redundant but I will probably change this and actually
+# use more advanced loss functions
 # copy paste from torchvision.models.detection.roi_heads
-# just changing the loss in fastrcnn_loss func
+# just changing the loss in fastrcnn_loss func 
 
 from typing import Dict, List, Optional, Tuple
 

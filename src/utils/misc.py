@@ -1,5 +1,4 @@
-import torch
-import json
+import yaml
 
 class_names = {
   1: 'pedestrian',
@@ -69,8 +68,8 @@ def load_part_of_pretrained_model(pretrained_dict, model):
   model.load_state_dict(model_dict)
   return model
 
-def load_config_from_json(model_number):
-  model_path = f'runs/detect/train{model_number}weights'
-  with open(model_path):
-    model_config = json.load(f'{model_path}/model_config.json')
+def load_config_from_args(model_number):
+  config_path = f'runs/detect/train{model_number}'
+  with open(f'{config_path}/args.yaml') as stream:
+    model_config = yaml.safe_load(stream)["model_config"]
   return model_config

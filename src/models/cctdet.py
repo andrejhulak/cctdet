@@ -1,6 +1,4 @@
 import torch
-import torchvision
-from collections import OrderedDict
 from torchvision.models.detection.faster_rcnn import RegionProposalNetwork, RPNHead, AnchorGenerator
 from torchvision.models.detection.transform import GeneralizedRCNNTransform
 from torchvision.models.detection.roi_heads import RoIHeads
@@ -8,12 +6,10 @@ from vit_pytorch.cct import CCT
 from utils.misc import class_names
 from torchvision.ops import MultiScaleRoIAlign
 from models.cctpredictor import CCTPredictor
-from typing import Dict, List, Optional, Tuple, Union
-from torchvision.models.detection.faster_rcnn import FastRCNNConvFCHead, fasterrcnn_resnet50_fpn_v2, FastRCNNPredictor
-from torchvision.models.detection.backbone_utils import resnet_fpn_backbone, _resnet_fpn_extractor 
+from typing import List, Tuple
+from torchvision.models.detection.backbone_utils import _resnet_fpn_extractor 
 from torchvision.models.resnet import resnet50
 from torchvision.models.resnet import ResNet50_Weights
-from utils.misc import load_part_of_pretrained_model
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 num_classes = len(class_names) + 1 # for the background class
@@ -85,31 +81,52 @@ class CCTdeT(torch.nn.Module):
                               score_thresh=0.05, nms_thresh=0.5, detections_per_img=300)
 
   def forward(self, batch, **kwargs):
-    images = batch['images']
-    targets = batch['targets']
-    original_image_sizes: List[Tuple[int, int]] = []
-    for img in images:
-      val = img.shape[-2:]
-      torch._assert(
-        len(val) == 2,
-        f"expecting the last two dimensions of the Tensor to be H and W instead got {img.shape[-2:]}",
-      )
-      original_image_sizes.append((val[0], val[1]))
+    if isinstance(batch, dict):
+      images = batch['images']
+      targets = batch['targets']
+      original_image_sizes: List[Tuple[int, int]] = []
+      for img in images:
+        val = img.shape[-2:]
+        torch._assert(
+          len(val) == 2,
+          f"expecting the last two dimensions of the Tensor to be H and W instead got {img.shape[-2:]}",
+        )
+        original_image_sizes.append((val[0], val[1]))
 
-    images, targets = self.transform(images, targets)
-    features = self.backbone(images.tensors)
+      images, targets = self.transform(images, targets)
+      features = self.backbone(images.tensors)
 
-    proposals, proposal_losses = self.rpn(images, features, targets)
-    detections, detector_losses = self.roi_heads(features, proposals, images.image_sizes, targets)
-    detections = self.transform.postprocess(detections, images.image_sizes, original_image_sizes)
+      proposals, proposal_losses = self.rpn(images, features, targets)
+      detections, detector_losses = self.roi_heads(features, proposals, images.image_sizes, targets)
+      detections = self.transform.postprocess(detections, images.image_sizes, original_image_sizes)
 
-    losses = {}
-    losses.update(detector_losses)
-    losses.update(proposal_losses)
+      losses = {}
+      losses.update(detector_losses)
+      losses.update(proposal_losses)
 
-    if self.training:
-      total_loss = sum(losses.values())
-      loss_items = torch.stack([losses[k] for k in losses.keys()]).detach().cpu()
-      return total_loss, loss_items
+      if self.training:
+        total_loss = sum(losses.values())
+        loss_items = torch.stack([losses[k] for k in losses.keys()]).detach().cpu()
+        return total_loss, loss_items
+      else:
+        return detections
     else:
+      images = batch
+      targets = None
+      original_image_sizes: List[Tuple[int, int]] = []
+      for img in images:
+        val = img.shape[-2:]
+        torch._assert(
+          len(val) == 2,
+          f"expecting the last two dimensions of the Tensor to be H and W instead got {img.shape[-2:]}",
+        )
+        original_image_sizes.append((val[0], val[1]))
+
+      images, targets = self.transform(images, targets)
+      features = self.backbone(images.tensors)
+
+      proposals, proposal_losses = self.rpn(images, features, targets)
+      detections, detector_losses = self.roi_heads(features, proposals, images.image_sizes, targets)
+      detections = self.transform.postprocess(detections, images.image_sizes, original_image_sizes)
+
       return detections

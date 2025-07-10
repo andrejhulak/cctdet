@@ -1,11 +1,6 @@
 import torch
 from torchmetrics.detection import MeanAveragePrecision
-from utils.misc import class_names
-import torchvision.transforms.functional as F
-import cv2
-import numpy as np
 from tqdm import tqdm
-import os
 from ultralytics.utils.metrics import ConfusionMatrix
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -15,6 +10,8 @@ def evaluate(model, dataloader):
   model.eval()
   # metric = MeanAveragePrecision(box_format='xyxy', iou_thresholds=[0.5], class_metrics=True).to(device)
   metric = MeanAveragePrecision(box_format='xyxy', class_metrics=True).to(device)
+  # :D this isn't a good solution but for now it's okay, we need to check how ultralytics does this evaluation
+  metric.warn_on_many_detections = False
   
   for images, targets, _ in tqdm(dataloader):
     imgs = [img.to(device) for img in images]

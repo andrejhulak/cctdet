@@ -3,7 +3,7 @@ from cct_trainer import CCTTrainer
 def train_model(model_config):
   overrides = {
     'data': 'data/VisDrone.yaml',
-    'epochs': 1,
+    'epochs': 2,
     'batch': 2,
     'device': '0',
     'imgsz' : 1920,
@@ -17,6 +17,17 @@ def train_model(model_config):
 if __name__ == "__main__":
   model_config = {
     'dim' : 384,
-    'dim' : 384,
+    'box_output_size' : 7,
+    'n_conv_layers' : 2,
+    'kernel_size' : 7,
+    'stride' : 1,
+    'padding' : 2,
+    'pooling_kernel_size' : 3,
+    'pooling_stride' : 1,
+    'pooling_padding' : 1,
+    'num_layers' : 2,
+    'num_heads' : 2,
+    'mlp_ratio' : 3.0,
   }
+
   train_model(model_config)

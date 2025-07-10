@@ -1,14 +1,10 @@
-from ultralytics.data.dataset import YOLODataset
 from ultralytics.engine.trainer import BaseTrainer
-from ultralytics.engine.validator import BaseValidator
-from torch.utils.data import DataLoader
 from ultralytics.data import build_dataloader, build_yolo_dataset
-from ultralytics.utils.torch_utils import de_parallel, torch_distributed_zero_first
+from ultralytics.utils.torch_utils import torch_distributed_zero_first
 from models.cctdet import CCTdeT
 from ultralytics.models.yolo.detect import DetectionValidator
 from copy import copy
 import torch
-from ultralytics.utils import LOGGER
 
 class CCTValidator(DetectionValidator):
   def __init__(self, dataloader=None, save_dir=None, pbar=None, args=None, _callbacks=None):
@@ -105,11 +101,10 @@ class CCTTrainer(BaseTrainer):
     return {'images' : images, 'targets' : targets}
 
   def progress_string(self):
-      return ("\n" + "%11s" * (4 + len(self.loss_names))) % (
-          "Epoch",
-          "GPU_mem",
-          *self.loss_names,
-          "Instances",
-          "Size",
-      )
-
+    return ("\n" + "%11s" * (4 + len(self.loss_names))) % (
+      "Epoch",
+      "GPU_mem",
+      *self.loss_names,
+      "Instances",
+      "Size",
+    )
