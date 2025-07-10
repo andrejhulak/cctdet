@@ -1,4 +1,5 @@
 import torch
+import json
 
 class_names = {
   1: 'pedestrian',
@@ -67,3 +68,9 @@ def load_part_of_pretrained_model(pretrained_dict, model):
   model_dict.update(pretrained_dict) 
   model.load_state_dict(model_dict)
   return model
+
+def load_config_from_json(model_number):
+  model_path = f'runs/detect/train{model_number}weights'
+  with open(model_path):
+    model_config = json.load(f'{model_path}/model_config.json')
+  return model_config

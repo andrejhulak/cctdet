@@ -19,7 +19,7 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 num_classes = len(class_names) + 1 # for the background class
 
 class CCTdeT(torch.nn.Module):
-  def __init__(self, model_config, *args, **kwargs):
+  def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
 
     # standard Faster-RCNN transform 
@@ -59,25 +59,19 @@ class CCTdeT(torch.nn.Module):
                                     nms_thresh=0.5,
                                     score_thresh=0.0)
 
-    dim = model_config['dim']
-    box_output_size = model_config['box_output_size']
+    box_output_size = 7
+
     box_roi_pool = MultiScaleRoIAlign(featmap_names=['0', '1', '2', '3', '4'], output_size=box_output_size, sampling_ratio=2)
 
-    cct = CCT(img_size=(box_output_size,box_output_size),
-              embedding_dim=dim,
-              n_input_channels=backbone.out_channels,
-              n_conv_layers=model_config['n_conv_layers'],
-              kernel_size=model_config['kernel_size'], stride=model_config['stride'], padding=model_config['padding'],
-              pooling_kernel_size=model_config['pooling_kernel_size'], pooling_stride=model_config['pooling_stride'],
-              pooling_padding=model_config['pooling_padding'],
-              num_layers=model_config['num_layers'], num_heads=model_config['num_heads'], mlp_ratio=model_config['mlp_ratio'],
-              num_classes=num_classes,
-              positional_embedding='learnable')
+    box_head = FastRCNNConvFCHead(
+        (backbone.out_channels, box_output_size, box_output_size), [256, 256, 256, 256], [1024], norm_layer=torch.nn.BatchNorm2d
+    )
 
-    predictor = CCTPredictor(cct, embed_dim=dim, num_classes=num_classes)
+    representation_size = 1024
+    predictor = FastRCNNPredictor(representation_size, num_classes)
 
     self.roi_heads = RoIHeads(box_roi_pool=box_roi_pool,
-                              box_head=torch.nn.Identity(),
+                              box_head=box_head,
                               box_predictor=predictor,
                               fg_iou_thresh=0.5, bg_iou_thresh=0.5,
                               batch_size_per_image=256, positive_fraction=0.25,
@@ -85,31 +79,46 @@ class CCTdeT(torch.nn.Module):
                               score_thresh=0.05, nms_thresh=0.5, detections_per_img=300)
 
   def forward(self, batch, **kwargs):
-    images = batch['images']
-    targets = batch['targets']
-    original_image_sizes: List[Tuple[int, int]] = []
-    for img in images:
-      val = img.shape[-2:]
-      torch._assert(
-        len(val) == 2,
-        f"expecting the last two dimensions of the Tensor to be H and W instead got {img.shape[-2:]}",
-      )
-      original_image_sizes.append((val[0], val[1]))
+    # do we even need this?
+    if isinstance(batch, dict):
+      images = batch['images']
+      targets = batch['targets']
+      original_image_sizes: List[Tuple[int, int]] = []
+      for img in images:
+        val = img.shape[-2:]
+        torch._assert(
+          len(val) == 2,
+          f"expecting the last two dimensions of the Tensor to be H and W instead got {img.shape[-2:]}",
+        )
+        original_image_sizes.append((val[0], val[1]))
 
-    images, targets = self.transform(images, targets)
-    features = self.backbone(images.tensors)
+      images, targets = self.transform(images, targets)
+      features = self.backbone(images.tensors)
 
-    proposals, proposal_losses = self.rpn(images, features, targets)
-    detections, detector_losses = self.roi_heads(features, proposals, images.image_sizes, targets)
-    detections = self.transform.postprocess(detections, images.image_sizes, original_image_sizes)
+      proposals, proposal_losses = self.rpn(images, features, targets)
+      detections, detector_losses = self.roi_heads(features, proposals, images.image_sizes, targets)
+      detections = self.transform.postprocess(detections, images.image_sizes, original_image_sizes)
 
-    losses = {}
-    losses.update(detector_losses)
-    losses.update(proposal_losses)
+      losses = {}
+      losses.update(detector_losses)
+      losses.update(proposal_losses)
 
-    if self.training:
-      total_loss = sum(losses.values())
-      loss_items = torch.stack([losses[k] for k in losses.keys()]).detach().cpu()
-      return total_loss, loss_items
-    else:
+      if self.training:
+        total_loss = sum(losses.values())
+        loss_items = torch.stack([losses[k] for k in losses.keys()]).detach().cpu()
+        return total_loss, loss_items
+      else:
+        return detections
+    else: 
+      images = [img.to(torch.float32) / 255.0 for img in batch]
+      images = [img.to(device) for img in images]
+      original_image_sizes = [img.shape[-2:] for img in images]
+
+      images, _ = self.transform(images, None)
+      features = self.backbone(images.tensors)
+
+      proposals, _ = self.rpn(images, features, None)
+      detections, _ = self.roi_heads(features, proposals, images.image_sizes, None)
+      detections = self.transform.postprocess(detections, images.image_sizes, original_image_sizes)
+
       return detections

@@ -577,6 +577,7 @@ class BaseTrainer:
                 "train_args": vars(self.args),  # save as dict
                 # "train_metrics": {**self.metrics, **{"fitness": self.fitness}},
                 # "train_results": self.read_results_csv(),
+                "model_config" : self.args.model_config,
                 "date": datetime.now().isoformat(),
                 "version": __version__,
                 "license": "AGPL-3.0 (https://ultralytics.com/license)",
