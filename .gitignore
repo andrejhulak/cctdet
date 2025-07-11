@@ -1,7 +1,13 @@
-/data
+/data/VisDrone2019-DET-test-challenge
+/data/VisDrone2019-DET-test-dev
+/data/VisDrone2019-DET-train
+/data/VisDrone2019-DET-val
+/data/VisDrone2019-DET-test-challenge.zip
+/data/VisDrone2019-DET-test-dev.zip
+/data/VisDrone2019-DET-train.zip
+/data/VisDrone2019-DET-val.zip
 /src/__pycache__
 /src/*/pycache
 /model_weights
 todo.txt
 **/__pycache__/**
-/runs
