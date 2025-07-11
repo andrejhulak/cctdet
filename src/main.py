@@ -4,7 +4,7 @@ def train_model(model_config):
   overrides = {
     'data': 'data/VisDrone.yaml',
     'epochs': 50,
-    'batch': 8,
+    'batch': 16,
     'device': '0',
     'imgsz': 1920,
     'deterministic': False,
