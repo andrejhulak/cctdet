@@ -25,8 +25,8 @@ if __name__ == "__main__":
     'pooling_kernel_size' : 3,
     'pooling_stride' : 1,
     'pooling_padding' : 1,
-    'num_layers' : 2,
-    'num_heads' : 2,
+    'num_layers' : 14,
+    'num_heads' : 6,
     'mlp_ratio' : 3.0,
   }
 

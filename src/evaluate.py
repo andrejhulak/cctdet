@@ -19,9 +19,9 @@ if __name__ == "__main__":
   print("Running eval with this model config:")
   print(model_config)
   model = CCTdeT(model_config)
-  # ckpt_path = "runs/detect/fasterrcnn3/best.pt"
+  # ckpt_path = "runs/detect/fasterrcnn3/last.pt"
   # ckpt_path = "runs/detect/wow3/last.pt"
-  ckpt_path = f'runs/detect/train{model_number}/weights/best.pt'
+  ckpt_path = f'runs/detect/train{model_number}/weights/last.pt'
   checkpoint = torch.load(ckpt_path, weights_only=False, map_location=device)
 
   if 'ema' in checkpoint and hasattr(checkpoint['ema'], 'state_dict'):

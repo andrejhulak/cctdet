@@ -454,6 +454,7 @@ class BaseTrainer:
 
                 torch.cuda.empty_cache()
                 self.run_callbacks("on_train_batch_end")
+                break
 
             self.lr = {f"lr/pg{ir}": x["lr"] for ir, x in enumerate(self.optimizer.param_groups)}  # for loggers
             self.run_callbacks("on_train_epoch_end")
@@ -568,20 +569,20 @@ class BaseTrainer:
         buffer = io.BytesIO()
         torch.save(
             {
-                "epoch": self.epoch,
-                "best_fitness": self.best_fitness,
-                "model": None,  # resume and final checkpoints derive from EMA
+                # "epoch": self.epoch,
+                # "best_fitness": self.best_fitness,
+                # "model": None,  # resume and final checkpoints derive from EMA
                 "ema": deepcopy(self.ema.ema).half(),
-                "updates": self.ema.updates,
-                "optimizer": convert_optimizer_state_dict_to_fp16(deepcopy(self.optimizer.state_dict())),
-                "train_args": vars(self.args),  # save as dict
+                # "updates": self.ema.updates,
+                # "optimizer": convert_optimizer_state_dict_to_fp16(deepcopy(self.optimizer.state_dict())),
+                # "train_args": vars(self.args),  # save as dict
                 # "train_metrics": {**self.metrics, **{"fitness": self.fitness}},
                 # "train_results": self.read_results_csv(),
                 "model_config" : self.args.model_config,
-                "date": datetime.now().isoformat(),
-                "version": __version__,
-                "license": "AGPL-3.0 (https://ultralytics.com/license)",
-                "docs": "https://docs.ultralytics.com",
+                # "date": datetime.now().isoformat(),
+                # "version": __version__,
+                # "license": "AGPL-3.0 (https://ultralytics.com/license)",
+                # "docs": "https://docs.ultralytics.com",
             },
             buffer,
         )
@@ -589,10 +590,10 @@ class BaseTrainer:
 
         # Save checkpoints
         self.last.write_bytes(serialized_ckpt)  # save last.pt
-        if self.best_fitness == self.fitness:
-            self.best.write_bytes(serialized_ckpt)  # save best.pt
-        if (self.save_period > 0) and (self.epoch % self.save_period == 0):
-            (self.wdir / f"epoch{self.epoch}.pt").write_bytes(serialized_ckpt)  # save epoch, i.e. 'epoch3.pt'
+        # if self.best_fitness == self.fitness:
+        #     self.best.write_bytes(serialized_ckpt)  # save best.pt
+        # if (self.save_period > 0) and (self.epoch % self.save_period == 0):
+        #     (self.wdir / f"epoch{self.epoch}.pt").write_bytes(serialized_ckpt)  # save epoch, i.e. 'epoch3.pt'
         # if self.args.close_mosaic and self.epoch == (self.epochs - self.args.close_mosaic - 1):
         #    (self.wdir / "last_mosaic.pt").write_bytes(serialized_ckpt)  # save mosaic checkpoint
 
