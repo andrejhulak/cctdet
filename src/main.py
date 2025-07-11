@@ -1,4 +1,3 @@
-from itertools import product
 from cct_trainer import CCTTrainer
 
 def train_model(model_config):
@@ -7,55 +6,41 @@ def train_model(model_config):
     'epochs': 50,
     'batch': 8,
     'device': '0',
-    'imgsz' : 1920,
-    'deterministic' : False,
-    'model_config' : model_config
+    'imgsz': 1920,
+    'deterministic': False,
+    'model_config': model_config
   }
 
   trainer = CCTTrainer(overrides=overrides)
   trainer.train()
 
 if __name__ == "__main__":
-  dims = [32, 64, 128]
-  box_output_sizes = [7]
-  n_conv_layers_list = [1, 2, 3]
-  kernel_sizes = [3, 5, 7]
-  strides = [1]
-  paddings = [1]
-  pooling_kernel_sizes = [2, 3]
-  pooling_strides = [1]
-  pooling_paddings = [1]
-  num_layers_list = [1, 2]
-  num_heads_list = [2]
-  mlp_ratios = [2.0, 3.0]
+  cct_configs = [
+    # format: (dim, num_layers, num_heads, mlp_ratio, n_conv_layers, kernel_size, stride)
+    (128, 2, 2, 1.0, 2, 3, 1),
+    (128, 4, 2, 1.0, 2, 3, 1),
+    (256, 6, 4, 2.0, 2, 3, 1),
+    (256, 7, 4, 2.0, 1, 3, 1),
+    (256, 7, 4, 2.0, 2, 7, 2),
+    (384, 14, 6, 3.0, 2, 3, 1)
+  ]
 
-  for dim, box_output_size, n_conv_layers, kernel_size, stride, padding, pooling_kernel_size, pooling_stride, pooling_padding, num_layers, num_heads, mlp_ratio in product(
-    dims,
-    box_output_sizes,
-    n_conv_layers_list,
-    kernel_sizes,
-    strides,
-    paddings,
-    pooling_kernel_sizes,
-    pooling_strides,
-    pooling_paddings,
-    num_layers_list,
-    num_heads_list,
-    mlp_ratios
-  ):
+  for config in cct_configs:
+    dim, num_layers, num_heads, mlp_ratio, n_conv_layers, kernel_size, stride = config
+
     model_config = {
-      'dim' : dim,
-      'box_output_size' : box_output_size,
-      'n_conv_layers' : n_conv_layers,
-      'kernel_size' : kernel_size,
-      'stride' : stride,
-      'padding' : padding,
-      'pooling_kernel_size' : pooling_kernel_size,
-      'pooling_stride' : pooling_stride,
-      'pooling_padding' : pooling_padding,
-      'num_layers' : num_layers,
-      'num_heads' : num_heads,
-      'mlp_ratio' : mlp_ratio,
+      'dim': dim,
+      'box_output_size': 7,
+      'n_conv_layers': n_conv_layers,
+      'kernel_size': kernel_size,
+      'stride': stride,
+      'padding': kernel_size // 2,
+      'pooling_kernel_size': 3,
+      'pooling_stride': 1,
+      'pooling_padding': 1,
+      'num_layers': num_layers,
+      'num_heads': num_heads,
+      'mlp_ratio': mlp_ratio
     }
 
     print(model_config)
