@@ -14,7 +14,7 @@ k = 9
 resize_transform = v2.Resize(size=(800, 1333), antialias=True)
 
 if __name__ == "__main__":
-  val_root = "data/VisDrone/VisDrone2019-DET-val"
+  val_root = "data/VisDrone2019-DET-train"
   val_ds = VisDrone(root=val_root, transforms=resize_transform)
   val_dl = DataLoader(val_ds, batch_size=BATCH_SIZE, shuffle=False,
                       collate_fn=collate_fn_simple)
@@ -24,8 +24,8 @@ if __name__ == "__main__":
   for imgs, targets, _ in tqdm(val_dl):
     h, w = imgs[0].shape[1:]
     boxes = targets[0]['boxes']
-    widths = (boxes[:, 2] - boxes[:, 0]) / w
-    heights = (boxes[:, 3] - boxes[:, 1]) / h
+    widths = (boxes[:, 2] - boxes[:, 0])
+    heights = (boxes[:, 3] - boxes[:, 1])
     wh = torch.stack((widths, heights), dim=1)
     all_boxes.append(wh)
 

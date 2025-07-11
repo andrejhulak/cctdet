@@ -2,7 +2,7 @@ import torch
 from torch.optim import AdamW, SGD
 from datasets.ds import VisDrone
 from torch.utils.data import DataLoader
-from utils.misc import collate_fn_simple, class_names
+from utils.misc import collate_fn_simple, class_names, load_config_from_args
 from models.cctdet import CCTdeT
 from tqdm import tqdm
 import os
@@ -51,9 +51,14 @@ if __name__ == "__main__":
   val_dl = DataLoader(val_ds, batch_size=BATCH_SIZE, shuffle=False,
                       collate_fn=collate_fn_simple, num_workers=4)
 
-  model = CCTdeT()
+  model_number = ""
+  model_config = load_config_from_args(model_number)
+  print("Running eval with this model config:")
+  print(model_config)
+  model = CCTdeT(model_config)
+  # ckpt_path = "runs/detect/fasterrcnn3/last.pt"
   # ckpt_path = "runs/detect/wow3/last.pt"
-  ckpt_path = "runs/detect/train9/weights/best.pt"
+  ckpt_path = f'runs/detect/train{model_number}/weights/last.pt'
 
   checkpoint = torch.load(ckpt_path, weights_only=False, map_location=device)
 
