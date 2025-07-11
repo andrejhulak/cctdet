@@ -4,8 +4,8 @@ from cct_trainer import CCTTrainer
 def train_model(model_config):
   overrides = {
     'data': 'data/VisDrone.yaml',
-    'epochs': 2,
-    'batch': 2,
+    'epochs': 50,
+    'batch': 8,
     'device': '0',
     'imgsz' : 1920,
     'deterministic' : False,
@@ -16,7 +16,7 @@ def train_model(model_config):
   trainer.train()
 
 if __name__ == "__main__":
-  dims = [32, 64, 128, 256]
+  dims = [32, 64, 128]
   box_output_sizes = [7]
   n_conv_layers_list = [1, 2, 3]
   kernel_sizes = [3, 5, 7]
@@ -27,7 +27,7 @@ if __name__ == "__main__":
   pooling_paddings = [1]
   num_layers_list = [1, 2]
   num_heads_list = [2]
-  mlp_ratios = [3.0]
+  mlp_ratios = [2.0, 3.0]
 
   for dim, box_output_size, n_conv_layers, kernel_size, stride, padding, pooling_kernel_size, pooling_stride, pooling_padding, num_layers, num_heads, mlp_ratio in product(
     dims,
