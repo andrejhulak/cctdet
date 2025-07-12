@@ -3,6 +3,7 @@ from datasets.ds import VisDrone
 from torch.utils.data import DataLoader
 from utils.misc import collate_fn_simple, format_metrics, load_config_from_args
 from models.cctdet import CCTdeT
+from models.fasterrcnn import FasterRCNN
 from engine import evaluate, conf_mat
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -14,14 +15,33 @@ if __name__ == "__main__":
   val_dl = DataLoader(val_ds, batch_size=BATCH_SIZE, shuffle=False,
                       collate_fn=collate_fn_simple)
 
-  model_number = "2"
+  model_number = "4"
   model_config = load_config_from_args(model_number)
   print("Running eval with this model config:")
   print(model_config)
   model = CCTdeT(model_config)
-  # ckpt_path = "runs/detect/fasterrcnn3/last.pt"
-  # ckpt_path = "runs/detect/wow3/last.pt"
   ckpt_path = f'runs/detect/train{model_number}/weights/last.pt'
+
+  # model_config = {
+  #   'dim': 384,
+  #   'box_output_size': 7,
+  #   'n_conv_layers': 2,
+  #   'kernel_size': 7,
+  #   'stride': 2,
+  #   'padding': 3,
+  #   'pooling_kernel_size': 3,
+  #   'pooling_stride': 2,
+  #   'pooling_padding': 1,
+  #   'num_layers': 4,
+  #   'num_heads': 4,
+  #   'mlp_ratio': 3.0
+  # }
+  # ckpt_path = "old_models/wow3/best.pt"
+  # model = CCTdeT(model_config)
+
+  # model = FasterRCNN()
+  # ckpt_path = "old_models/fasterrcnn3/best.pt"
+
   checkpoint = torch.load(ckpt_path, weights_only=False, map_location=device)
 
   if 'ema' in checkpoint and hasattr(checkpoint['ema'], 'state_dict'):

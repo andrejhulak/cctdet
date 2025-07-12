@@ -13,7 +13,7 @@ from torchvision.models.resnet import ResNet50_Weights
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 num_classes = len(class_names) + 1 # for the background class
 
-class CCTdeT(torch.nn.Module):
+class FasterRCNN(torch.nn.Module):
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
 
@@ -105,7 +105,7 @@ class CCTdeT(torch.nn.Module):
       else:
         return detections
     else: 
-      images = [img.to(torch.float32) / 255.0 for img in batch]
+      images = [img.to(torch.float32) for img in batch]
       images = [img.to(device) for img in images]
       original_image_sizes = [img.shape[-2:] for img in images]
 

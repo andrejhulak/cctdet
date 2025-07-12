@@ -12,3 +12,4 @@
 todo.txt
 **/__pycache__/**
 /venv/
+/old_models
