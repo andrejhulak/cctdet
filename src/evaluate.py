@@ -15,7 +15,7 @@ if __name__ == "__main__":
   val_dl = DataLoader(val_ds, batch_size=BATCH_SIZE, shuffle=False,
                       collate_fn=collate_fn_simple)
 
-  model_number = "4"
+  model_number = "5"
   model_config = load_config_from_args(model_number)
   print("Running eval with this model config:")
   print(model_config)
