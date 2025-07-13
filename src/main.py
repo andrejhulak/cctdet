@@ -36,7 +36,7 @@ if __name__ == "__main__":
       'n_conv_layers': n_conv_layers,
       'kernel_size': kernel_size,
       'stride': stride,
-      'padding': kernel_size // 2,
+      'padding': 0,
       'pooling_kernel_size': 1,
       'pooling_stride': 1,
       'pooling_padding': 1,
