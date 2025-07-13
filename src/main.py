@@ -20,7 +20,7 @@ def train_model(model_config):
 if __name__ == "__main__":
   cct_configs = [
     # format: (dim, num_layers, num_heads, mlp_ratio, n_conv_layers, kernel_size, stride)
-    (64, 2, 2, 2.0, 1, 3, 1),
+    (256, 4, 4, 2.0, 1, 3, 1),
     # (128, 4, 2, 1.0, 2, 3, 1),
     # (256, 6, 4, 2.0, 2, 3, 1),
     # (256, 7, 4, 2.0, 1, 3, 1),

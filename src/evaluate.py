@@ -37,7 +37,7 @@ if __name__ == "__main__":
   #   'mlp_ratio': 3.0
   # }
   # ckpt_path = "old_models/wow3/best.pt"
-  # model = CCTdeT(model_config)
+  model = CCTdeT(model_config)
 
   # model = FasterRCNN()
   # ckpt_path = "old_models/fasterrcnn3/best.pt"
