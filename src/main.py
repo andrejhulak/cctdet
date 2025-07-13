@@ -1,12 +1,9 @@
 from cct_trainer import CCTTrainer
 
-# hypothesis: it's doing well because the dimension alongside embedding is high
-# kernel size - look into the convolutional tokenizer - so we retain as much as possible
-
 def train_model(model_config):
   overrides = {
     'data': 'data/VisDrone.yaml',
-    'epochs': 50,
+    'epochs': 60,
     'batch': 16,
     'device': '0',
     'imgsz': 1920,
@@ -20,11 +17,12 @@ def train_model(model_config):
 if __name__ == "__main__":
   cct_configs = [
     # format: (dim, num_layers, num_heads, mlp_ratio, n_conv_layers, kernel_size, stride)
-    (256, 4, 4, 2.0, 1, 3, 1),
+    # (256, 4, 4, 2.0, 1, 3, 1),
     # (128, 4, 2, 1.0, 2, 3, 1),
     # (256, 6, 4, 2.0, 2, 3, 1),
     # (256, 7, 4, 2.0, 1, 3, 1),
-    # (256, 7, 4, 2.0, 2, 7, 2)
+    # (256, 7, 4, 2.0, 2, 7, 2),
+    (384, 2, 4, 2.0, 2, 7, 1)
   ]
 
   for config in cct_configs:
