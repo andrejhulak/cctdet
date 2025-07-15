@@ -63,11 +63,11 @@ if __name__ == "__main__":
   checkpoint = torch.load(ckpt_path, weights_only=False, map_location=device)
 
   if 'ema' in checkpoint and hasattr(checkpoint['ema'], 'state_dict'):
-      ema_state_dict = checkpoint['ema'].state_dict()
+    ema_state_dict = checkpoint['ema'].state_dict()
   elif 'model' in checkpoint and hasattr(checkpoint['model'], 'state_dict'):
-      ema_state_dict = checkpoint['model'].state_dict()
+    ema_state_dict = checkpoint['model'].state_dict()
   else:
-      raise KeyError("Could not find compatible model state_dict in checkpoint.")
+    raise KeyError("Could not find compatible model state_dict in checkpoint.")
 
   model.load_state_dict(ema_state_dict, strict=True)
   model.to(device).to(torch.float32)
