@@ -4,7 +4,7 @@ def train_model(model_config):
   overrides = {
     'data': 'data/VisDrone.yaml',
     'epochs': 70,
-    'batch': 8,
+    'batch': 16,
     'device': '0',
     'imgsz': 1920,
     'deterministic': False,
@@ -22,7 +22,7 @@ if __name__ == "__main__":
     # (256, 6, 4, 2.0, 2, 3, 1),
     # (256, 7, 4, 2.0, 1, 3, 1),
     # (256, 7, 4, 2.0, 2, 7, 2),
-    (1024, 4, 4, 2.0, 2, 7, 2)
+    (768, 4, 4, 2.0, 2, 7, 2)
   ]
 
   for config in cct_configs:

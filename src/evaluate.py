@@ -16,12 +16,12 @@ if __name__ == "__main__":
                       collate_fn=collate_fn_simple)
 
   # newly trained models setup 
-  # model_number = "8"
-  # model_config = load_config_from_args(model_number)
-  # print("Running eval with this model config:")
-  # print(model_config)
-  # model = CCTdeT(model_config)
-  # ckpt_path = f'runs/detect/train{model_number}/weights/last.pt'
+  model_number = "8"
+  model_config = load_config_from_args(model_number)
+  print("Running eval with this model config:")
+  print(model_config)
+  model = CCTdeT(model_config)
+  ckpt_path = f'runs/detect/train{model_number}/weights/last.pt'
 
   # best CCTdeT model setup
   # model_config = {
@@ -41,36 +41,36 @@ if __name__ == "__main__":
   # ckpt_path = "old_models/wow3/best.pt"
 
   # for testing inference speed with different configs
-  model_config = {
-    'dim': 1024,
-    'box_output_size': 7,
-    'n_conv_layers': 2,
-    'kernel_size': 7,
-    'stride': 2,
-    'padding': 3,
-    'pooling_kernel_size': 3,
-    'pooling_stride': 2,
-    'pooling_padding': 1,
-    'num_layers': 4,
-    'num_heads': 4,
-    'mlp_ratio': 2.0
-  }
-  model = CCTdeT(model_config)
+  # model_config = {
+  #   'dim': 1024,
+  #   'box_output_size': 7,
+  #   'n_conv_layers': 2,
+  #   'kernel_size': 7,
+  #   'stride': 2,
+  #   'padding': 3,
+  #   'pooling_kernel_size': 3,
+  #   'pooling_stride': 2,
+  #   'pooling_padding': 1,
+  #   'num_layers': 4,
+  #   'num_heads': 4,
+  #   'mlp_ratio': 2.0
+  # }
+  # model = CCTdeT(model_config)
 
   # Faster R-CNN best model setup
   # model = FasterRCNN()
   # ckpt_path = "old_models/fasterrcnn3/best.pt"
 
-  # checkpoint = torch.load(ckpt_path, weights_only=False, map_location=device)
+  checkpoint = torch.load(ckpt_path, weights_only=False, map_location=device)
 
-  # if 'ema' in checkpoint and hasattr(checkpoint['ema'], 'state_dict'):
-  #     ema_state_dict = checkpoint['ema'].state_dict()
-  # elif 'model' in checkpoint and hasattr(checkpoint['model'], 'state_dict'):
-  #     ema_state_dict = checkpoint['model'].state_dict()
-  # else:
-  #     raise KeyError("Could not find compatible model state_dict in checkpoint.")
+  if 'ema' in checkpoint and hasattr(checkpoint['ema'], 'state_dict'):
+      ema_state_dict = checkpoint['ema'].state_dict()
+  elif 'model' in checkpoint and hasattr(checkpoint['model'], 'state_dict'):
+      ema_state_dict = checkpoint['model'].state_dict()
+  else:
+      raise KeyError("Could not find compatible model state_dict in checkpoint.")
 
-  # model.load_state_dict(ema_state_dict, strict=True)
+  model.load_state_dict(ema_state_dict, strict=True)
   model.to(device).to(torch.float32)
 
   total_params = sum(p.numel() for p in model.parameters())
