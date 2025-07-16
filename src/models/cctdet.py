@@ -34,8 +34,9 @@ class CCTdeT(torch.nn.Module):
     rpn_post_nms_top_n_train=1000
     rpn_post_nms_top_n_test=1000
 
-    anchor_sizes = ((4,), (8,), (16,), (32,), (64,))
+    # anchor_sizes = ((4,), (8,), (16,), (32,), (64,))
     # anchor_sizes = ((8,), (16,), (32,), (64,), (128,))
+    anchor_sizes = ((12,), (18,), (24,), (64,), (128,))
     aspect_ratios = ((0.5, 1.0, 1.5),) * len(anchor_sizes)
     anchor_generator = AnchorGenerator(sizes=anchor_sizes, aspect_ratios=aspect_ratios)
 

@@ -16,7 +16,7 @@ if __name__ == "__main__":
                       collate_fn=collate_fn_simple)
 
   # newly trained models setup 
-  model_number = "9"
+  model_number = "10"
   model_config = load_config_from_args(model_number)
   print("Running eval with this model config:")
   print(model_config)
