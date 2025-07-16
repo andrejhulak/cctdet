@@ -16,7 +16,7 @@ if __name__ == "__main__":
                       collate_fn=collate_fn_simple)
 
   # newly trained models setup 
-  model_number = "8"
+  model_number = "9"
   model_config = load_config_from_args(model_number)
   print("Running eval with this model config:")
   print(model_config)
@@ -42,9 +42,9 @@ if __name__ == "__main__":
 
   # for testing inference speed with different configs
   # model_config = {
-  #   'dim': 1024,
+  #   'dim': 512,
   #   'box_output_size': 7,
-  #   'n_conv_layers': 2,
+  #   'n_conv_layers': 1,
   #   'kernel_size': 7,
   #   'stride': 2,
   #   'padding': 3,
@@ -53,7 +53,7 @@ if __name__ == "__main__":
   #   'pooling_padding': 1,
   #   'num_layers': 4,
   #   'num_heads': 4,
-  #   'mlp_ratio': 2.0
+  #   'mlp_ratio': 1.0
   # }
   # model = CCTdeT(model_config)
 
