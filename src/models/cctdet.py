@@ -36,7 +36,7 @@ class CCTdeT(torch.nn.Module):
 
     # anchor_sizes = ((4,), (8,), (16,), (32,), (64,))
     # anchor_sizes = ((8,), (16,), (32,), (64,), (128,))
-    anchor_sizes = ((12,), (18,), (24,), (64,), (128,))
+    anchor_sizes = ((12,), (18,), (24,), (64,), (128,)) # do the same experiment for Faster R-CNN
     aspect_ratios = ((0.5, 1.0, 1.5),) * len(anchor_sizes)
     anchor_generator = AnchorGenerator(sizes=anchor_sizes, aspect_ratios=aspect_ratios)
 

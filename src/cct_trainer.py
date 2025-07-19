@@ -1,10 +1,12 @@
 from ultralytics.engine.trainer import BaseTrainer
 from ultralytics.data import build_dataloader, build_yolo_dataset
 from ultralytics.utils.torch_utils import torch_distributed_zero_first
-from models.cctdet import CCTdeT
+# from models.cctdet import CCTdeT
 from ultralytics.models.yolo.detect import DetectionValidator
 from copy import copy
 import torch
+
+from models.fasterrcnn import FasterRCNN
 
 class CCTValidator(DetectionValidator):
   def __init__(self, dataloader=None, save_dir=None, pbar=None, args=None, _callbacks=None):
@@ -13,7 +15,8 @@ class CCTValidator(DetectionValidator):
 
 class CCTTrainer(BaseTrainer):
   def get_model(self, cfg=None, weights=None, verbose=None):
-    model = CCTdeT(self.args.model_config)
+    model = FasterRCNN()
+    # model = CCTdeT(self.args.model_config)
 
     # ckpt_path = "runs/detect/train2/weights/best.pt"
     # checkpoint = torch.load(ckpt_path, weights_only=False, map_location=self.device)

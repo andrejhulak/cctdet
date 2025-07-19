@@ -6,7 +6,7 @@ def train_model(model_config):
     'epochs': 70,
     'batch': 16,
     'device': '0',
-    'imgsz': 1920,
+    'imgsz': 1333,
     'deterministic': False,
     'model_config': model_config
   }
@@ -22,7 +22,7 @@ if __name__ == "__main__":
     # (256, 6, 4, 2.0, 2, 3, 1),
     # (256, 7, 4, 2.0, 1, 3, 1),
     # (256, 7, 4, 2.0, 2, 7, 2),
-    (512, 4, 4, 1.0, 1, 7, 2)
+    (512, 4, 4, 2.0, 2, 7, 2)
   ]
 
   for config in cct_configs:

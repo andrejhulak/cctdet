@@ -28,13 +28,14 @@ class FasterRCNN(torch.nn.Module):
     backbone = _resnet_fpn_extractor(backbone, 5, norm_layer=torch.nn.BatchNorm2d)
     self.backbone = backbone
 
-    rpn_pre_nms_top_n_train=1000
-    rpn_pre_nms_top_n_test=1000
-    rpn_post_nms_top_n_train=500
-    rpn_post_nms_top_n_test=500
+    rpn_pre_nms_top_n_train=2000
+    rpn_pre_nms_top_n_test=2000
+    rpn_post_nms_top_n_train=1000
+    rpn_post_nms_top_n_test=1000
 
     # anchor_sizes = ((4,), (8,), (16,), (32,), (64,))
-    anchor_sizes = ((8,), (16,), (32,), (64,), (128,))
+    # anchor_sizes = ((8,), (16,), (32,), (64,), (128,))
+    anchor_sizes = ((12,), (18,), (24,), (64,), (128,)) # do the same experiment for Faster R-CNN
     aspect_ratios = ((0.5, 1.0, 1.5),) * len(anchor_sizes)
     anchor_generator = AnchorGenerator(sizes=anchor_sizes, aspect_ratios=aspect_ratios)
 
@@ -47,7 +48,7 @@ class FasterRCNN(torch.nn.Module):
                                     head=rpn_head,
                                     fg_iou_thresh=0.7,
                                     bg_iou_thresh=0.3,
-                                    batch_size_per_image=256,
+                                    batch_size_per_image=512,
                                     positive_fraction=0.5,
                                     pre_nms_top_n=rpn_pre_nms_top_n,
                                     post_nms_top_n=rpn_post_nms_top_n,
@@ -69,7 +70,7 @@ class FasterRCNN(torch.nn.Module):
                               box_head=box_head,
                               box_predictor=predictor,
                               fg_iou_thresh=0.5, bg_iou_thresh=0.5,
-                              batch_size_per_image=256, positive_fraction=0.25,
+                              batch_size_per_image=512, positive_fraction=0.25,
                               bbox_reg_weights=None,
                               score_thresh=0.05, nms_thresh=0.5, detections_per_img=300)
 
