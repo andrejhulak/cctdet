@@ -16,7 +16,7 @@ if __name__ == "__main__":
                       collate_fn=collate_fn_simple)
 
   # newly trained models setup 
-  model_number = "11"
+  model_number = "9"
   model_config = load_config_from_args(model_number)
   print("Running eval with this model config:")
   print(model_config)
@@ -39,6 +39,7 @@ if __name__ == "__main__":
   #   'mlp_ratio': 3.0
   # }
   # ckpt_path = "old_models/wow3/best.pt"
+  # model = CCTdeT(model_config)
 
   # for testing inference speed with different configs
   # model_config = {
