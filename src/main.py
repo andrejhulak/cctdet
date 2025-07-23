@@ -22,7 +22,7 @@ if __name__ == "__main__":
     # (256, 6, 4, 2.0, 2, 3, 1),
     # (256, 7, 4, 2.0, 1, 3, 1),
     # (256, 7, 4, 2.0, 2, 7, 2),
-    (128, 4, 4, 1.0, 4, 7, 2)
+    (512, 2, 2, 1.0, 2, 7, 2)
   ]
 
   for config in cct_configs:
@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     model_config = {
       'dim': dim,
-      'box_output_size': 14,
+      'box_output_size': 7,
       'n_conv_layers': n_conv_layers,
       'kernel_size': kernel_size,
       'stride': stride,

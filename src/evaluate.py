@@ -10,14 +10,14 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 BATCH_SIZE = 2
 
 if __name__ == "__main__":
-  val_root = "data/VisDrone2019-DET-test-dev"
+  val_root = "data/VisDrone2019-DET-val"
   val_ds = VisDrone(root=val_root)
   val_dl = DataLoader(val_ds, batch_size=BATCH_SIZE, shuffle=False,
                       collate_fn=collate_fn_simple)
 
   # newly trained models setup 
   # 11 is the best cctdet but with the special anchors
-  model_number = "13"
+  model_number = "15"
   model_config = load_config_from_args(model_number)
   print("Running eval with this model config:")
   print(model_config)
