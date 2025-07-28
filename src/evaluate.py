@@ -26,22 +26,22 @@ if __name__ == "__main__":
   ckpt_path = f'runs/detect/train{model_number}/weights/last.pt'
 
   # best CCTdeT model setup
-  model_config = {
-    'dim': 384,
-    'box_output_size': 7,
-    'n_conv_layers': 2,
-    'kernel_size': 7,
-    'stride': 2,
-    'padding': 3,
-    'pooling_kernel_size': 3,
-    'pooling_stride': 2,
-    'pooling_padding': 1,
-    'num_layers': 4,
-    'num_heads': 4,
-    'mlp_ratio': 3.0
-  }
-  ckpt_path = "old_models/wow3/best.pt"
-  model = CCTdeT(model_config)
+  # model_config = {
+  #   'dim': 384,
+  #   'box_output_size': 7,
+  #   'n_conv_layers': 2,
+  #   'kernel_size': 7,
+  #   'stride': 2,
+  #   'padding': 3,
+  #   'pooling_kernel_size': 3,
+  #   'pooling_stride': 2,
+  #   'pooling_padding': 1,
+  #   'num_layers': 4,
+  #   'num_heads': 4,
+  #   'mlp_ratio': 3.0
+  # }
+  # ckpt_path = "old_models/wow3/best.pt"
+  # model = CCTdeT(model_config)
 
   # for testing inference speed with different configs
   # model_config = {
