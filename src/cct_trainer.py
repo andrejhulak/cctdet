@@ -14,8 +14,8 @@ class CCTValidator(DetectionValidator):
 
 class CCTTrainer(BaseTrainer):
   def get_model(self, cfg=None, weights=None, verbose=None):
-    model = FasterRCNN()
-    # model = CCTdeT(self.args.model_config)
+    # model = FasterRCNN()
+    model = CCTdeT(self.args.model_config)
 
     # ckpt_path = "runs/detect/train2/weights/best.pt"
     # checkpoint = torch.load(ckpt_path, weights_only=False, map_location=self.device)
