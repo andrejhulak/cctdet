@@ -17,7 +17,7 @@ if __name__ == "__main__":
 
   # newly trained models setup 
   # 11 is the best cctdet but with the special anchors
-  model_number = "15"
+  model_number = "22"
   model_config = load_config_from_args(model_number)
   print("Running eval with this model config:")
   print(model_config)
